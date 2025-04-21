@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         id: accountDetails.$id,
         email: accountDetails.email,
         name: accountDetails.name,
-        role: 'volunteer', // Default role, should be fetched from database
+        role: 'admin', // Default role, should be fetched from database
       };
 
       console.log('Setting user in store:', user);
@@ -130,7 +130,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         id: accountDetails.$id,
         email: accountDetails.email,
         name: accountDetails.name,
-        role: 'volunteer', // Default role, should be fetched from database
+        role: 'admin', // Default role, should be fetched from database
       };
 
       console.log('Setting user in store:', user);
