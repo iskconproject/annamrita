@@ -1,6 +1,6 @@
 import { Order, OrderStatus } from '../../types/order';
 import { useOrderStore } from '../../store/orderStore';
-import { printReceipt } from '../../services/printService';
+import { printReceipt } from '../../services/printService.tsx';
 
 interface OrderListProps {
   orders: Order[];
@@ -141,7 +141,7 @@ export const OrderList = ({ orders, showStatusControls = false }: OrderListProps
                 >
                   Reprint
                 </button>
-                
+
                 {showStatusControls && (
                   <div className="mt-2 space-y-1">
                     {order.status !== 'Preparing' && (
@@ -152,7 +152,7 @@ export const OrderList = ({ orders, showStatusControls = false }: OrderListProps
                         Mark Preparing
                       </button>
                     )}
-                    
+
                     {order.status !== 'Ready' && (
                       <button
                         onClick={() => handleStatusChange(order.id, 'Ready')}
@@ -161,7 +161,7 @@ export const OrderList = ({ orders, showStatusControls = false }: OrderListProps
                         Mark Ready
                       </button>
                     )}
-                    
+
                     {order.status !== 'Completed' && (
                       <button
                         onClick={() => handleStatusChange(order.id, 'Completed')}
