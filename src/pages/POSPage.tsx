@@ -3,14 +3,18 @@ import { Layout } from '../components/layout/Layout';
 import { MenuItemCard } from '../components/pos/MenuItemCard';
 import { OrderSummary } from '../components/pos/OrderSummary';
 import { useMenuStore } from '../store/menuStore';
+import { Category } from '@/types/category';
 
 export const POSPage = () => {
   const { items, categories, fetchMenuItems, isLoading } = useMenuStore();
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
 
   useEffect(() => {
-    fetchMenuItems();
-  }, [fetchMenuItems]);
+    // Only fetch if we don't already have items
+    if (items.length === 0) {
+      fetchMenuItems();
+    }
+  }, [items.length, fetchMenuItems]);
 
   useEffect(() => {
     // No need to set initial category as we now default to 'all'
@@ -34,22 +38,22 @@ export const POSPage = () => {
                 <button
                   onClick={() => setSelectedCategory('all')}
                   className={`py-4 text-sm font-medium border-b-2 ${selectedCategory === 'all'
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-indigo-500 text-indigo-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                 >
                   All Menu
                 </button>
                 {categories.map(category => (
                   <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`py-4 text-sm font-medium border-b-2 ${selectedCategory === category
-                        ? 'border-indigo-500 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    key={category.id}
+                    onClick={() => setSelectedCategory(category.name)}
+                    className={`py-4 text-sm font-medium border-b-2 ${selectedCategory === category.name
+                      ? 'border-indigo-500 text-indigo-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                   >
-                    {category}
+                    {category.name}
                   </button>
                 ))}
               </nav>

@@ -17,6 +17,11 @@ export const useReceiptConfigStore = create<ReceiptConfigState>((set, get) => ({
   error: null,
 
   fetchConfig: async () => {
+    // If already loading or we already have a non-default config, don't fetch again
+    if (get().isLoading || (get().config !== DEFAULT_RECEIPT_CONFIG && get().config.id)) {
+      return;
+    }
+
     set({ isLoading: true, error: null });
     try {
       try {

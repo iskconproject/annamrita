@@ -20,6 +20,7 @@ export const MENU_ITEMS_COLLECTION_ID = '6805edaf0006de1435cd'; // menu-items co
 export const ORDERS_COLLECTION_ID = '6805ede2001c256497f2'; // orders collection
 export const USERS_COLLECTION_ID = '6805edf1002dd84d087c'; // users collection
 export const RECEIPT_CONFIG_COLLECTION_ID = '6807354d00302547ab6a'; // receipt-config collection
+export const CATEGORIES_COLLECTION_ID = '6807495c001bdc0294b4'; // categories collection
 
 // Storage bucket ID
 export const STORAGE_BUCKET_ID = 'annamrita-storage';

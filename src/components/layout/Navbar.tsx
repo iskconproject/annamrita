@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '@/components/ui/button';
+import { Settings } from 'lucide-react';
 
 export const Navbar = () => {
   const { user, logout } = useAuthStore();
@@ -43,13 +44,6 @@ export const Navbar = () => {
                   {user.role === 'admin' && (
                     <>
                       <Link
-                        to="/menu"
-                        className="px-3 py-2 text-sm font-medium text-white rounded-md hover:bg-iskcon-dark"
-                      >
-                        Menu
-                      </Link>
-
-                      <Link
                         to="/reports"
                         className="px-3 py-2 text-sm font-medium text-white rounded-md hover:bg-iskcon-dark"
                       >
@@ -57,17 +51,11 @@ export const Navbar = () => {
                       </Link>
 
                       <Link
-                        to="/users"
-                        className="px-3 py-2 text-sm font-medium text-white rounded-md hover:bg-iskcon-dark"
+                        to="/settings"
+                        className="px-3 py-2 text-sm font-medium text-white rounded-md hover:bg-iskcon-dark flex items-center gap-1"
                       >
-                        Users
-                      </Link>
-
-                      <Link
-                        to="/receipt-config"
-                        className="px-3 py-2 text-sm font-medium text-white rounded-md hover:bg-iskcon-dark"
-                      >
-                        Receipt
+                        <Settings size={16} />
+                        Settings
                       </Link>
                     </>
                   )}
@@ -166,13 +154,6 @@ export const Navbar = () => {
           {user?.role === 'admin' && (
             <>
               <Link
-                to="/menu"
-                className="block px-3 py-2 text-base font-medium text-white rounded-md hover:bg-iskcon-dark"
-              >
-                Menu
-              </Link>
-
-              <Link
                 to="/reports"
                 className="block px-3 py-2 text-base font-medium text-white rounded-md hover:bg-iskcon-dark"
               >
@@ -180,17 +161,11 @@ export const Navbar = () => {
               </Link>
 
               <Link
-                to="/users"
-                className="block px-3 py-2 text-base font-medium text-white rounded-md hover:bg-iskcon-dark"
+                to="/settings"
+                className="block px-3 py-2 text-base font-medium text-white rounded-md hover:bg-iskcon-dark flex items-center gap-1"
               >
-                Users
-              </Link>
-
-              <Link
-                to="/receipt-config"
-                className="block px-3 py-2 text-base font-medium text-white rounded-md hover:bg-iskcon-dark"
-              >
-                Receipt
+                <Settings size={16} />
+                Settings
               </Link>
             </>
           )}

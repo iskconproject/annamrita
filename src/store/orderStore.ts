@@ -138,6 +138,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
 
   fetchOrders: async () => {
+    // If already loading, don't make another request
+    if (get().isLoading) return;
+
     set({ isLoading: true, error: null });
 
     try {

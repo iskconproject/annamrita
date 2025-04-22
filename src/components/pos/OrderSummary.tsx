@@ -10,9 +10,12 @@ export const OrderSummary = () => {
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
 
+  // Only fetch receipt config if it's not already loaded
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    if (!config) {
+      fetchConfig();
+    }
+  }, [config, fetchConfig]);
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
     if (quantity <= 0) {

@@ -12,8 +12,11 @@ export const ReceiptConfigPage = () => {
   const [previewConfig, setPreviewConfig] = useState<ReceiptConfig | null>(null);
 
   useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
+    // Only fetch if we don't already have a config with an ID
+    if (!config || !config.id) {
+      fetchConfig();
+    }
+  }, [config, fetchConfig]);
 
   // Update preview config when store config changes
   useEffect(() => {

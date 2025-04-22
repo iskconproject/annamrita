@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -6,17 +6,21 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MenuItem } from "@/types/menu";
+import { Category } from "@/types/category";
 import { menuItemSchema, MenuItemFormValues } from "@/schemas/menu-schema";
 
 interface MenuItemDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   item?: MenuItem;
+  categories: Category[];
   onSubmit: (item: Omit<MenuItem, "id">) => void;
 }
 
-export function MenuItemDialog({ open, onOpenChange, item, onSubmit }: MenuItemDialogProps) {
+export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit }: MenuItemDialogProps) {
+  const [newCategory, setNewCategory] = useState("");
   const form = useForm<MenuItemFormValues>({
     resolver: zodResolver(menuItemSchema),
     defaultValues: {
@@ -48,6 +52,8 @@ export function MenuItemDialog({ open, onOpenChange, item, onSubmit }: MenuItemD
           available: true,
         });
       }
+      // Reset the new category state
+      setNewCategory("");
     }
   }, [open, item, form]);
 
@@ -99,7 +105,52 @@ export function MenuItemDialog({ open, onOpenChange, item, onSubmit }: MenuItemD
                 <FormItem>
                   <FormLabel>Category</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter category" {...field} />
+                    <div className="space-y-2">
+                      <Select
+                        value={field.value}
+                        onValueChange={(value) => {
+                          if (value === "new-category") {
+                            // If "Add New Category" is selected, show the input field
+                            setNewCategory("");
+                          } else {
+                            field.onChange(value);
+                            setNewCategory("");
+                          }
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((category) => (
+                            <SelectItem key={category.id} value={category.name}>
+                              {category.name}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="new-category" className="text-iskcon-primary font-medium">
+                            + Add New Category
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Show input field when "Add New Category" is selected */}
+                      {field.value === "new-category" && (
+                        <div className="mt-2">
+                          <Input
+                            id="new-category-input"
+                            placeholder="Enter new category name"
+                            value={newCategory}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setNewCategory(value);
+                              if (value.trim()) {
+                                field.onChange(value);
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>

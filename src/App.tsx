@@ -9,6 +9,7 @@ import { MenuPage } from './pages/MenuPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
+import { SettingsPage } from './pages/SettingsPage';
 import './App.css';
 
 // Protected route component
@@ -126,6 +127,15 @@ function App() {
             element={
               <ProtectedRoute requiredRole={['admin']}>
                 <ReceiptConfigPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute requiredRole={['admin']}>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

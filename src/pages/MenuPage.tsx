@@ -10,16 +10,28 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const MenuPage = () => {
-  const { items, fetchMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, isLoading } = useMenuStore();
+  const { items, categories, fetchMenuItems, fetchCategories, addMenuItem, addCategory, updateMenuItem, deleteMenuItem, isLoading } = useMenuStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string | 'All'>('All');
+  const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
-    fetchMenuItems();
-  }, [fetchMenuItems]);
+    // Only fetch if we don't already have items
+    if (items.length === 0) {
+      fetchMenuItems();
+    }
+
+    // Only fetch if we don't already have categories or if they're sample categories
+    if (categories.length === 0 ||
+      (categories.length > 0 &&
+        (categories[0].id.startsWith('sample-') ||
+          categories[0].id.startsWith('fallback-') ||
+          categories[0].id.startsWith('local-')))) {
+      fetchCategories();
+    }
+  }, [items.length, categories, fetchMenuItems, fetchCategories]);
 
   const handleAddItem = () => {
     setEditingItem(null);
@@ -38,6 +50,12 @@ export const MenuPage = () => {
   };
 
   const handleFormSubmit = async (item: Omit<MenuItem, 'id'>) => {
+    // Check if the category is new and needs to be added
+    const categoryExists = categories.some(cat => cat.name === item.category);
+    if (!categoryExists && item.category) {
+      await addCategory(item.category);
+    }
+
     if (editingItem) {
       await updateMenuItem(editingItem.id, item);
     } else {
@@ -47,8 +65,7 @@ export const MenuPage = () => {
     setEditingItem(null);
   };
 
-  // Get unique categories
-  const categories = Array.from(new Set(items.map(item => item.category)));
+  // Use categories from the store
 
   // Filter items by category and search query
   const filteredItems = items
@@ -92,8 +109,8 @@ export const MenuPage = () => {
               <SelectContent>
                 <SelectItem value="All">All Categories</SelectItem>
                 {categories.map(category => (
-                  <SelectItem key={category} value={category}>
-                    {category}
+                  <SelectItem key={category.id} value={category.name}>
+                    {category.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -172,6 +189,7 @@ export const MenuPage = () => {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           item={editingItem || undefined}
+          categories={categories}
           onSubmit={handleFormSubmit}
         />
       </div>
