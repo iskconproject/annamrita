@@ -12,97 +12,127 @@ import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
 import './App.css';
 
 // Protected route component
-const ProtectedRoute = ({ children, requiredRole }: { children: JSX.Element, requiredRole?: string[] }) => {
-  const { user } = useAuthStore();
+const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactElement, requiredRole?: string[] }) => {
+  const { user, isLoading } = useAuthStore();
+  const location = window.location;
 
+  // If we're still loading, don't redirect yet
+  if (isLoading) {
+    return children;
+  }
+
+  // Only redirect if we're sure there's no user
   if (!user) {
+    // Save the current path to localStorage before redirecting
+    if (location.pathname !== '/login') {
+      localStorage.setItem('redirectPath', location.pathname);
+    }
     return <Navigate to="/login" replace />;
   }
 
+  // Check role permissions
   if (requiredRole && !requiredRole.includes(user.role)) {
     return <Navigate to="/" replace />;
   }
 
+  // If we have a user, render the children
   return children;
 };
 
 function App() {
-  const { checkSession } = useAuthStore();
+  const { checkSession, isLoading } = useAuthStore();
 
   useEffect(() => {
+    // Save the current path when the app first loads
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/login') {
+      localStorage.setItem('redirectPath', currentPath);
+    }
+
+    // Check for an existing session when the app loads
     checkSession();
   }, [checkSession]);
 
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
+      {/* Show a loading indicator while checking the session */}
+      {isLoading ? (
+        <div className="flex items-center justify-center min-h-screen bg-iskcon-light">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-iskcon-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p className="mt-4 text-iskcon-primary font-medium">Loading...</p>
+          </div>
+        </div>
+      ) : (
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/pos"
-          element={
-            <ProtectedRoute>
-              <POSPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/pos"
+            element={
+              <ProtectedRoute>
+                <POSPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/orders"
-          element={
-            <ProtectedRoute>
-              <OrdersPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/orders"
+            element={
+              <ProtectedRoute>
+                <OrdersPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/menu"
-          element={
-            <ProtectedRoute requiredRole={['admin']}>
-              <MenuPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/menu"
+            element={
+              <ProtectedRoute requiredRole={['admin']}>
+                <MenuPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/reports"
-          element={
-            <ProtectedRoute requiredRole={['admin']}>
-              <ReportsPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute requiredRole={['admin']}>
+                <ReportsPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/users"
-          element={
-            <ProtectedRoute requiredRole={['admin']}>
-              <UserManagementPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute requiredRole={['admin']}>
+                <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/receipt-config"
-          element={
-            <ProtectedRoute requiredRole={['admin']}>
-              <ReceiptConfigPage />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/receipt-config"
+            element={
+              <ProtectedRoute requiredRole={['admin']}>
+                <ReceiptConfigPage />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      )}
     </Router>
   );
 }

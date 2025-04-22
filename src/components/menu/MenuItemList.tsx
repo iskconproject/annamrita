@@ -1,5 +1,7 @@
-import { MenuItem } from '../../types/menu';
-import { useMenuStore } from '../../store/menuStore';
+import { MenuItem } from '@/types/menu';
+import { useMenuStore } from '@/store/menuStore';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 
 interface MenuItemListProps {
   items: MenuItem[];
@@ -16,87 +18,75 @@ export const MenuItemList = ({ items, onEdit, onDelete }: MenuItemListProps) => 
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="border-b border-gray-200 bg-gray-50/50">
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
               Name
             </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
               Short Name
             </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
               Category
             </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
               Price
             </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
-              Status
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
+              Available
             </th>
-            <th
-              scope="col"
-              className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-            >
+            <th className="p-4 text-left text-xs font-medium text-iskcon-primary uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900">{item.name}</div>
+        <tbody>
+          {items.map((item, index) => (
+            <tr
+              key={item.id}
+              className={`border-b border-gray-100 hover:bg-gray-50/50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                }`}
+            >
+              <td className="p-4">
+                <div className="font-medium text-iskcon-primary">{item.name}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{item.shortName}</div>
+              <td className="p-4">
+                <div className="text-gray-600">{item.shortName}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-500">{item.category}</div>
+              <td className="p-4">
+                <div className="inline-block px-2 py-1 text-xs font-medium text-iskcon-primary bg-iskcon-light rounded-full">
+                  {item.category}
+                </div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm text-gray-900">₹{item.price.toFixed(2)}</div>
+              <td className="p-4">
+                <div className="font-semibold">₹{item.price.toFixed(2)}</div>
               </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                <button
-                  onClick={() => handleToggleAvailability(item.id, item.available)}
-                  className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    item.available
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {item.available ? 'Available' : 'Not Available'}
-                </button>
+              <td className="p-4">
+                <Switch
+                  checked={item.available}
+                  onCheckedChange={() => handleToggleAvailability(item.id, item.available)}
+                />
               </td>
-              <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                <button
-                  onClick={() => onEdit(item)}
-                  className="mr-2 text-indigo-600 hover:text-indigo-900"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => onDelete(item.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </button>
+              <td className="p-4">
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onEdit(item)}
+                    className="text-iskcon-primary border-iskcon-primary hover:bg-iskcon-light"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onDelete(item.id)}
+                    className="text-red-500 border-red-500 hover:bg-red-50"
+                  >
+                    Delete
+                  </Button>
+                </div>
               </td>
             </tr>
           ))}

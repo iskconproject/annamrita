@@ -198,6 +198,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await account.deleteSession('current');
+      // Only clear the redirect path on explicit logout
+      localStorage.removeItem('redirectPath');
       set({ user: null, isLoading: false });
     } catch (error) {
       console.error('Logout error:', error);
@@ -212,6 +214,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('Checking session...');
     set({ isLoading: true, error: null });
     try {
+      // First check if we have a current session
+      try {
+        await account.getSession('current');
+      } catch (sessionError) {
+        console.log('No active session found:', sessionError);
+        set({ user: null, isLoading: false });
+        return; // Exit early if no session exists
+      }
+
+      // If we have a session, get the account details
       console.log('Getting account details...');
       const accountDetails = await account.get();
       console.log('Account details retrieved:', accountDetails);
@@ -261,9 +273,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user, isLoading: false });
       console.log('Session check completed successfully');
     } catch (error) {
-      // User is not logged in
-      console.log('No active session found:', error);
-      set({ user: null, isLoading: false });
+      // Something went wrong with the session check
+      console.error('Error checking session:', error);
+      set({ user: null, isLoading: false, error: 'Failed to check session' });
     }
   },
 }));

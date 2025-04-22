@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Layout } from '../components/layout/Layout';
-import { MenuItemList } from '../components/menu/MenuItemList';
-import { MenuItemForm } from '../components/menu/MenuItemForm';
-import { useMenuStore } from '../store/menuStore';
-import { MenuItem } from '../types/menu';
+import { Layout } from '@/components/layout/Layout';
+import { MenuItemList } from '@/components/menu/MenuItemList';
+import { MenuItemGrid } from '@/components/menu/MenuItemGrid';
+import { MenuItemDialog } from '@/components/menu/MenuItemDialog';
+import { useMenuStore } from '@/store/menuStore';
+import { MenuItem } from '@/types/menu';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const MenuPage = () => {
   const { items, fetchMenuItems, addMenuItem, updateMenuItem, deleteMenuItem, isLoading } = useMenuStore();
-  const [showForm, setShowForm] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | 'All'>('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   useEffect(() => {
     fetchMenuItems();
@@ -17,12 +23,12 @@ export const MenuPage = () => {
 
   const handleAddItem = () => {
     setEditingItem(null);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
   const handleEditItem = (item: MenuItem) => {
     setEditingItem(item);
-    setShowForm(true);
+    setDialogOpen(true);
   };
 
   const handleDeleteItem = async (id: string) => {
@@ -37,90 +43,137 @@ export const MenuPage = () => {
     } else {
       await addMenuItem(item);
     }
-    setShowForm(false);
-    setEditingItem(null);
-  };
-
-  const handleFormCancel = () => {
-    setShowForm(false);
+    setDialogOpen(false);
     setEditingItem(null);
   };
 
   // Get unique categories
   const categories = Array.from(new Set(items.map(item => item.category)));
 
-  // Filter items by category
-  const filteredItems = categoryFilter === 'All'
-    ? items
-    : items.filter(item => item.category === categoryFilter);
+  // Filter items by category and search query
+  const filteredItems = items
+    .filter(item => categoryFilter === 'All' || item.category === categoryFilter)
+    .filter(item =>
+      searchQuery === '' ||
+      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
   return (
     <Layout>
-      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-900">Menu Management</h1>
-          <button
-            onClick={handleAddItem}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-          >
-            Add Item
-          </button>
+      <div className="container py-8 mx-auto">
+        {/* Header with decorative background */}
+        <div className="relative p-6 mb-8 overflow-hidden rounded-lg bg-gradient-to-r from-iskcon-light to-iskcon-primary/20">
+          <div className="absolute inset-0 opacity-10"></div>
+          <div className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-iskcon-primary">Menu Management</h1>
+              <p className="mt-1 text-gray-600">Manage your menu items with ease</p>
+            </div>
+            <Button
+              onClick={handleAddItem}
+              className="bg-iskcon-primary hover:bg-iskcon-primary/90"
+            >
+              Add New Item
+            </Button>
+          </div>
         </div>
-        
-        {/* Category Filter */}
-        <div className="mt-4">
-          <label htmlFor="category-filter" className="block text-sm font-medium text-gray-700">
-            Filter by Category
-          </label>
-          <select
-            id="category-filter"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value as string | 'All')}
-            className="block w-full py-2 pl-3 pr-10 mt-1 text-base border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          >
-            <option value="All">All Categories</option>
-            {categories.map(category => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
+
+        {/* Filters and Search */}
+        <div className="grid gap-4 mb-6 md:grid-cols-3">
+          <div className="flex items-center space-x-2">
+            <Select
+              value={categoryFilter}
+              onValueChange={(value) => setCategoryFilter(value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Filter by Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="All">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="md:col-span-2">
+            <Input
+              placeholder="Search items..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
         </div>
-        
-        {/* Form */}
-        {showForm && (
-          <div className="p-4 mt-6 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-900">
-              {editingItem ? 'Edit Item' : 'Add New Item'}
-            </h2>
-            <div className="mt-4">
-              <MenuItemForm
-                item={editingItem || undefined}
-                onSubmit={handleFormSubmit}
-                onCancel={handleFormCancel}
-              />
+
+        {/* View Mode Toggle */}
+        <div className="flex justify-end mb-4 space-x-2">
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            className={viewMode === 'grid' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
+          >
+            Grid View
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            className={viewMode === 'list' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
+          >
+            List View
+          </Button>
+        </div>
+
+        {/* Menu Items Display */}
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto border-4 rounded-full border-iskcon-primary border-t-transparent animate-spin"></div>
+              <p className="mt-4 font-medium text-iskcon-primary">Loading menu items...</p>
             </div>
           </div>
-        )}
-        
-        {/* Menu Items List */}
-        <div className="mt-6 bg-white rounded-lg shadow">
-          {isLoading ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500">Loading menu items...</p>
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <p className="text-gray-500">No menu items found</p>
-            </div>
-          ) : (
+        ) : filteredItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 p-8 text-center bg-white rounded-lg shadow">
+            <p className="text-xl text-gray-500">No menu items found</p>
+            <p className="mt-2 text-gray-400">
+              {searchQuery ? 'Try a different search term or' : 'Start by'} adding a new menu item
+            </p>
+            <Button
+              onClick={handleAddItem}
+              className="mt-4 bg-iskcon-primary hover:bg-iskcon-primary/90"
+            >
+              Add New Item
+            </Button>
+          </div>
+        ) : viewMode === 'grid' ? (
+          <MenuItemGrid
+            items={filteredItems}
+            onEdit={handleEditItem}
+            onDelete={handleDeleteItem}
+          />
+        ) : (
+          <div className="bg-white rounded-lg shadow">
             <MenuItemList
               items={filteredItems}
               onEdit={handleEditItem}
               onDelete={handleDeleteItem}
             />
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Menu Item Dialog */}
+        <MenuItemDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          item={editingItem || undefined}
+          onSubmit={handleFormSubmit}
+        />
       </div>
     </Layout>
   );
