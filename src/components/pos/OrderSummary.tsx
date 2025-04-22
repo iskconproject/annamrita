@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
 import { printReceipt } from '../../services/printService.tsx';
+import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 
 export const OrderSummary = () => {
   const { currentOrder, removeItemFromOrder, updateItemQuantity, clearCurrentOrder, calculateTotal, createOrder } = useOrderStore();
+  const { config, fetchConfig } = useReceiptConfigStore();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
     if (quantity <= 0) {
@@ -25,8 +31,8 @@ export const OrderSummary = () => {
       const order = await createOrder(phone);
 
       if (order) {
-        // Try to print the receipt
-        const printed = await printReceipt(order);
+        // Try to print the receipt with the configured settings
+        const printed = await printReceipt(order, config);
 
         if (!printed) {
           setPrintError('Failed to print receipt. Please check printer connection.');

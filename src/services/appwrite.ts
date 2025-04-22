@@ -19,6 +19,7 @@ export const DATABASE_ID = 'annamrita-db';
 export const MENU_ITEMS_COLLECTION_ID = 'menu-items';
 export const ORDERS_COLLECTION_ID = 'orders';
 export const USERS_COLLECTION_ID = 'users';
+export const RECEIPT_CONFIG_COLLECTION_ID = 'receipt-config';
 
 // Storage bucket ID
 export const STORAGE_BUCKET_ID = 'annamrita-storage';

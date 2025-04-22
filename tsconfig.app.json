@@ -18,7 +18,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     /* Path Aliases */
-    "baseUrl": ".",
+     "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"

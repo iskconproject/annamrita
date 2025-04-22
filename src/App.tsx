@@ -8,6 +8,7 @@ import { OrdersPage } from './pages/OrdersPage';
 import { MenuPage } from './pages/MenuPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
+import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
 import './App.css';
 
 // Protected route component
@@ -87,6 +88,15 @@ function App() {
           element={
             <ProtectedRoute requiredRole={['admin']}>
               <UserManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/receipt-config"
+          element={
+            <ProtectedRoute requiredRole={['admin']}>
+              <ReceiptConfigPage />
             </ProtectedRoute>
           }
         />

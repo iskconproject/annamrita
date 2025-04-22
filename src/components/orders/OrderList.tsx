@@ -1,6 +1,8 @@
+import { useEffect } from 'react';
 import { Order, OrderStatus } from '../../types/order';
 import { useOrderStore } from '../../store/orderStore';
 import { printReceipt } from '../../services/printService.tsx';
+import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 
 interface OrderListProps {
   orders: Order[];
@@ -9,6 +11,11 @@ interface OrderListProps {
 
 export const OrderList = ({ orders, showStatusControls = false }: OrderListProps) => {
   const { updateOrderStatus } = useOrderStore();
+  const { config, fetchConfig } = useReceiptConfigStore();
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
     await updateOrderStatus(orderId, status);
@@ -16,7 +23,7 @@ export const OrderList = ({ orders, showStatusControls = false }: OrderListProps
 
   const handleReprintReceipt = async (order: Order) => {
     try {
-      await printReceipt(order);
+      await printReceipt(order, config);
     } catch (error) {
       console.error('Error reprinting receipt:', error);
       alert('Failed to print receipt. Please check printer connection.');
