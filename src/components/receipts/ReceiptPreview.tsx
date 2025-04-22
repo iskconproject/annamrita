@@ -112,7 +112,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
                 {sampleOrder.items.map((item, index) => (
                   <div key={index} className="ml-2">
                     <div className="flex justify-between">
-                      <span>{item.quantity} x {item.shortName || item.name}</span>
+                      <span>{item.quantity} x {item.name}</span>
                       <span>Rs.{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                     <div className="text-xs ml-4">

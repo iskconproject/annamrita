@@ -37,7 +37,7 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
       {order.items.map((item, index) => (
         <div key={index}>
           <Row
-            left={`${item.quantity} x ${item.shortName || item.name}`}
+            left={`${item.quantity} x ${item.name}`}
             right={`Rs.${(item.price * item.quantity).toFixed(2)}`}
           />
           <Text>{`  @ Rs.${item.price.toFixed(2)} each`}</Text>
@@ -107,7 +107,7 @@ export const generateReceiptContent = (order: Order, config: ReceiptConfig = DEF
   receipt += '------------------------\n';
   order.items.forEach(item => {
     const itemTotal = item.price * item.quantity;
-    receipt += `${item.quantity} x ${item.shortName || item.name}\n`;
+    receipt += `${item.quantity} x ${item.name}\n`;
     receipt += `  @ Rs.${item.price.toFixed(2)} = Rs.${itemTotal.toFixed(2)}\n`;
   });
   receipt += '------------------------\n';

@@ -92,19 +92,6 @@ export const ReceiptConfigForm = ({ config, onSubmit, isLoading, onFormChange }:
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="showLogo">Show Logo</Label>
-                <p className="text-sm text-muted-foreground">
-                  Display the ISKCON logo on the receipt
-                </p>
-              </div>
-              <Switch
-                id="showLogo"
-                checked={formData.showLogo}
-                onCheckedChange={(checked) => handleToggleChange('showLogo', checked)}
-              />
-            </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">

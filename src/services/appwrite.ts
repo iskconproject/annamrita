@@ -15,11 +15,11 @@ export const databases = new Databases(client);
 export const storage = new Storage(client);
 
 // Database and collection IDs
-export const DATABASE_ID = 'annamrita-db';
-export const MENU_ITEMS_COLLECTION_ID = 'menu-items';
-export const ORDERS_COLLECTION_ID = 'orders';
-export const USERS_COLLECTION_ID = 'users';
-export const RECEIPT_CONFIG_COLLECTION_ID = 'receipt-config';
+export const DATABASE_ID = '6804a8c2000b9c7f4716'; // ID of the annamrita-db database
+export const MENU_ITEMS_COLLECTION_ID = '6805edaf0006de1435cd'; // menu-items collection
+export const ORDERS_COLLECTION_ID = '6805ede2001c256497f2'; // orders collection
+export const USERS_COLLECTION_ID = '6805edf1002dd84d087c'; // users collection
+export const RECEIPT_CONFIG_COLLECTION_ID = '6807354d00302547ab6a'; // receipt-config collection
 
 // Storage bucket ID
 export const STORAGE_BUCKET_ID = 'annamrita-storage';
