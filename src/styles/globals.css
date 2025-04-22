@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    --background: 280 30% 98%;
+    --foreground: 280 10% 10%;
+    
+    --card: 280 30% 98%;
+    --card-foreground: 280 10% 10%;
+    
+    --popover: 280 30% 98%;
+    --popover-foreground: 280 10% 10%;
+    
+    --primary: 291 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 45 100% 51%;
+    --secondary-foreground: 280 10% 10%;
+    
+    --muted: 280 10% 96%;
+    --muted-foreground: 280 5% 40%;
+    
+    --accent: 122 54% 49%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 280 10% 90%;
+    --input: 280 10% 90%;
+    --ring: 291 100% 42%;
+    
+    --radius: 0.5rem;
+  }
+ 
+  .dark {
+    --background: 280 50% 4%;
+    --foreground: 280 10% 98%;
+    
+    --card: 280 50% 6%;
+    --card-foreground: 280 10% 98%;
+    
+    --popover: 280 50% 6%;
+    --popover-foreground: 280 10% 98%;
+    
+    --primary: 291 100% 42%;
+    --primary-foreground: 0 0% 100%;
+    
+    --secondary: 45 100% 51%;
+    --secondary-foreground: 280 10% 10%;
+    
+    --muted: 280 50% 12%;
+    --muted-foreground: 280 10% 60%;
+    
+    --accent: 122 54% 49%;
+    --accent-foreground: 0 0% 100%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    --border: 280 50% 16%;
+    --input: 280 50% 16%;
+    --ring: 291 100% 42%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom ISKCON theme styles */
+.iskcon-gradient {
+  background: linear-gradient(135deg, #9C27B0 0%, #6A1B9A 100%);
+}
+
+.iskcon-gold-gradient {
+  background: linear-gradient(135deg, #FFC107 0%, #FF9800 100%);
+}
+
+.iskcon-border {
+  border: 2px solid #9C27B0;
+}
+
+.iskcon-shadow {
+  box-shadow: 0 4px 14px rgba(156, 39, 176, 0.2);
+}

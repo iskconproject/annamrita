@@ -1,20 +1,27 @@
 import { create } from 'zustand';
-import { account } from '../services/appwrite';
+import { account, databases, DATABASE_ID, USERS_COLLECTION_ID } from '../services/appwrite';
 import { User, UserRole } from '../types/auth';
-import { ID } from 'appwrite';
+import { ID, Query } from 'appwrite';
 
 interface AuthState {
   user: User | null;
+  users: User[];
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  addUser: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  fetchUsers: () => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
   logout: () => Promise<void>;
   checkSession: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+// Admin user credentials
+const ADMIN_EMAIL = 'arindamdawn3@gmail.com';
+
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  users: [],
   isLoading: false,
   error: null,
 
@@ -41,13 +48,45 @@ export const useAuthStore = create<AuthState>((set) => ({
       const accountDetails = await account.get();
       console.log('Account details:', accountDetails);
 
-      // In a real app, you would fetch the user's role from your database
-      // For now, we'll assume a default role
+      // Determine if this is the admin user
+      const isAdmin = accountDetails.email === ADMIN_EMAIL;
+
+      // Try to fetch user role from database
+      let userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
+
+      try {
+        const userDocs = await databases.listDocuments(
+          DATABASE_ID,
+          USERS_COLLECTION_ID,
+          [Query.equal('email', accountDetails.email)]
+        );
+
+        if (userDocs.documents.length > 0) {
+          userRole = userDocs.documents[0].role as UserRole;
+        } else if (isAdmin) {
+          // If admin user doesn't exist in the database yet, create it
+          await databases.createDocument(
+            DATABASE_ID,
+            USERS_COLLECTION_ID,
+            ID.unique(),
+            {
+              userId: accountDetails.$id,
+              email: accountDetails.email,
+              name: accountDetails.name,
+              role: 'admin'
+            }
+          );
+        }
+      } catch (dbError) {
+        console.warn('Error fetching user role from database:', dbError);
+        // If database error, default to admin for the admin email, volunteer for others
+      }
+
       const user: User = {
         id: accountDetails.$id,
         email: accountDetails.email,
         name: accountDetails.name,
-        role: 'admin', // Default role, should be fetched from database
+        role: userRole,
       };
 
       console.log('Setting user in store:', user);
@@ -62,20 +101,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  register: async (email: string, password: string, name: string, role: UserRole) => {
+  addUser: async (email: string, password: string, name: string, role: UserRole) => {
     set({ isLoading: true, error: null });
     try {
-      // Check if there's an active session and delete it first
-      try {
-        // Try to get the current session
-        await account.getSession('current');
-        // If successful, delete it
-        await account.deleteSession('current');
-      } catch (sessionError) {
-        // No active session or error getting session, we can proceed
-        console.log('No active session found or error getting session');
-      }
-
+      // Create the user in Appwrite auth
       const response = await account.create(
         ID.unique(),
         email,
@@ -83,21 +112,83 @@ export const useAuthStore = create<AuthState>((set) => ({
         name
       );
 
-      // In a real app, you would store the user's role in your database
-      await account.createEmailPasswordSession(email, password);
+      // Store user details with role in the database
+      await databases.createDocument(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        ID.unique(),
+        {
+          userId: response.$id,
+          email: response.email,
+          name: response.name,
+          role: role
+        }
+      );
 
-      const user: User = {
-        id: response.$id,
-        email: response.email,
-        name: response.name,
-        role: role,
-      };
+      // Fetch updated users list
+      await get().fetchUsers();
 
-      set({ user, isLoading: false });
+      set({ isLoading: false });
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Add user error:', error);
       set({
-        error: error instanceof Error ? error.message : 'Failed to register',
+        error: error instanceof Error ? error.message : 'Failed to add user',
+        isLoading: false
+      });
+    }
+  },
+
+  fetchUsers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        USERS_COLLECTION_ID
+      );
+
+      const users = response.documents.map(doc => ({
+        id: doc.userId,
+        email: doc.email,
+        name: doc.name,
+        role: doc.role as UserRole,
+      }));
+
+      set({ users, isLoading: false });
+    } catch (error) {
+      console.error('Fetch users error:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to fetch users',
+        isLoading: false
+      });
+    }
+  },
+
+  deleteUser: async (userId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Find the user document by userId
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        [Query.equal('userId', userId)]
+      );
+
+      if (response.documents.length > 0) {
+        // Delete the user document
+        await databases.deleteDocument(
+          DATABASE_ID,
+          USERS_COLLECTION_ID,
+          response.documents[0].$id
+        );
+      }
+
+      // Update the users list
+      const users = get().users.filter(user => user.id !== userId);
+      set({ users, isLoading: false });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to delete user',
         isLoading: false
       });
     }
@@ -125,12 +216,45 @@ export const useAuthStore = create<AuthState>((set) => ({
       const accountDetails = await account.get();
       console.log('Account details retrieved:', accountDetails);
 
-      // In a real app, you would fetch the user's role from your database
+      // Determine if this is the admin user
+      const isAdmin = accountDetails.email === ADMIN_EMAIL;
+
+      // Try to fetch user role from database
+      let userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
+
+      try {
+        const userDocs = await databases.listDocuments(
+          DATABASE_ID,
+          USERS_COLLECTION_ID,
+          [Query.equal('email', accountDetails.email)]
+        );
+
+        if (userDocs.documents.length > 0) {
+          userRole = userDocs.documents[0].role as UserRole;
+        } else if (isAdmin) {
+          // If admin user doesn't exist in the database yet, create it
+          await databases.createDocument(
+            DATABASE_ID,
+            USERS_COLLECTION_ID,
+            ID.unique(),
+            {
+              userId: accountDetails.$id,
+              email: accountDetails.email,
+              name: accountDetails.name,
+              role: 'admin'
+            }
+          );
+        }
+      } catch (dbError) {
+        console.warn('Error fetching user role from database:', dbError);
+        // If database error, default to admin for the admin email, volunteer for others
+      }
+
       const user: User = {
         id: accountDetails.$id,
         email: accountDetails.email,
         name: accountDetails.name,
-        role: 'admin', // Default role, should be fetched from database
+        role: userRole,
       };
 
       console.log('Setting user in store:', user);

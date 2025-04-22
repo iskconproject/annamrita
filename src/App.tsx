@@ -7,6 +7,7 @@ import { POSPage } from './pages/POSPage';
 import { OrdersPage } from './pages/OrdersPage';
 import { MenuPage } from './pages/MenuPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { UserManagementPage } from './pages/UserManagementPage';
 import './App.css';
 
 // Protected route component
@@ -77,6 +78,15 @@ function App() {
           element={
             <ProtectedRoute requiredRole={['admin']}>
               <ReportsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/users"
+          element={
+            <ProtectedRoute requiredRole={['admin']}>
+              <UserManagementPage />
             </ProtectedRoute>
           }
         />

@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useAuthStore } from '../../store/authStore';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export const LoginForm = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('arindamdawn3@gmail.com');
+  const [password, setPassword] = useState('HareKrishna@108');
   const { login, isLoading, error } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -14,59 +17,68 @@ export const LoginForm = () => {
   };
 
   return (
-    <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-      <div className="text-center">
-        <h1 className="text-2xl font-bold text-gray-900">Annamrita POS</h1>
-        <h2 className="mt-2 text-xl font-semibold text-gray-700">Login</h2>
-      </div>
+    <Card className="w-full max-w-md iskcon-shadow">
+      <CardHeader className="text-center iskcon-gradient text-white rounded-t-lg">
+        <CardTitle className="text-2xl font-bold">Annamrita POS</CardTitle>
+        <CardDescription className="text-white/90 font-medium">Rath Yatra Festival Management</CardDescription>
+      </CardHeader>
 
-      {error && (
-        <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">
-          {error}
-        </div>
-      )}
-
-      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
+      <CardContent className="p-6 space-y-4">
+        <div className="text-center mb-2">
+          <h2 className="text-xl font-semibold text-iskcon-primary">Login</h2>
         </div>
 
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="block w-full px-3 py-2 mt-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-          />
-        </div>
+        {error && (
+          <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">
+            {error}
+          </div>
+        )}
 
-        <div>
-          <button
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="border-iskcon-primary/30 focus-visible:ring-iskcon-primary"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium text-gray-700">
+              Password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border-iskcon-primary/30 focus-visible:ring-iskcon-primary"
+            />
+          </div>
+
+          <Button
             type="submit"
             disabled={isLoading}
-            className="flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
+            variant="iskcon"
+            className="w-full mt-2"
           >
             {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </div>
-      </form>
-    </div>
+          </Button>
+        </form>
+      </CardContent>
+
+      <CardFooter className="flex justify-center p-4 pt-0 text-xs text-gray-500">
+        <p>© {new Date().getFullYear()} ISKCON Asansol</p>
+      </CardFooter>
+    </Card>
   );
 };
