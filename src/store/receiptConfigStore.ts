@@ -39,22 +39,37 @@ export const useReceiptConfigStore = create<ReceiptConfigState>((set, get) => ({
             createdAt: new Date(doc.createdAt),
             updatedAt: new Date(doc.updatedAt),
           };
-          set({ config, isLoading: false });
+          set({ config, isLoading: false, error: null });
         } else {
           // No configuration found, use default and create one
           await get().updateConfig(DEFAULT_RECEIPT_CONFIG);
-          set({ isLoading: false });
+          set({ isLoading: false, error: null });
         }
-      } catch (dbError) {
-        // Handle database not found or collection not found errors gracefully
+      } catch (dbError: any) {
+        // Handle database not found or collection not found errors specifically
         console.warn('Database or collection not found, using default receipt config:', dbError);
-        set({ config: DEFAULT_RECEIPT_CONFIG, isLoading: false });
+
+        if (dbError?.code === 404) {
+          set({
+            config: DEFAULT_RECEIPT_CONFIG,
+            isLoading: false,
+            error: 'Database or collection not found. Please make sure the Appwrite database and collections are properly set up.'
+          });
+        } else {
+          // For other database errors, use default config but show the error
+          set({
+            config: DEFAULT_RECEIPT_CONFIG,
+            isLoading: false,
+            error: dbError?.message || 'Database error occurred'
+          });
+        }
       }
     } catch (error) {
       console.error('Error fetching receipt configuration:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to fetch receipt configuration',
         isLoading: false,
+        config: DEFAULT_RECEIPT_CONFIG, // Still provide default config even on error
       });
     }
   },
@@ -63,7 +78,7 @@ export const useReceiptConfigStore = create<ReceiptConfigState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const { id, ...configData } = config;
-      
+
       // Add timestamps
       const now = new Date();
       const dataToSave = {
@@ -73,41 +88,55 @@ export const useReceiptConfigStore = create<ReceiptConfigState>((set, get) => ({
 
       let savedConfig;
 
-      if (id) {
-        // Update existing configuration
-        const response = await databases.updateDocument(
-          DATABASE_ID,
-          RECEIPT_CONFIG_COLLECTION_ID,
-          id,
-          dataToSave
-        );
+      try {
+        if (id) {
+          // Update existing configuration
+          const response = await databases.updateDocument(
+            DATABASE_ID,
+            RECEIPT_CONFIG_COLLECTION_ID,
+            id,
+            dataToSave
+          );
 
-        savedConfig = {
-          id: response.$id,
-          ...dataToSave,
-          createdAt: new Date(response.createdAt),
-          updatedAt: new Date(response.updatedAt),
-        };
-      } else {
-        // Create new configuration
-        dataToSave.createdAt = now;
-        
-        const response = await databases.createDocument(
-          DATABASE_ID,
-          RECEIPT_CONFIG_COLLECTION_ID,
-          ID.unique(),
-          dataToSave
-        );
+          savedConfig = {
+            id: response.$id,
+            ...dataToSave,
+            createdAt: new Date(response.createdAt),
+            updatedAt: new Date(response.updatedAt),
+          };
+        } else {
+          // Create new configuration
+          dataToSave.createdAt = now;
 
-        savedConfig = {
-          id: response.$id,
-          ...dataToSave,
-          createdAt: new Date(response.createdAt),
-          updatedAt: new Date(response.updatedAt),
-        };
+          const response = await databases.createDocument(
+            DATABASE_ID,
+            RECEIPT_CONFIG_COLLECTION_ID,
+            ID.unique(),
+            dataToSave
+          );
+
+          savedConfig = {
+            id: response.$id,
+            ...dataToSave,
+            createdAt: new Date(response.createdAt),
+            updatedAt: new Date(response.updatedAt),
+          };
+        }
+
+        set({ config: savedConfig as ReceiptConfig, isLoading: false });
+      } catch (dbError: any) {
+        // Handle database not found or collection not found errors specifically
+        console.error('Database error when saving receipt configuration:', dbError);
+
+        if (dbError?.code === 404) {
+          set({
+            error: 'Database or collection not found. Please make sure the Appwrite database and collections are properly set up.',
+            isLoading: false,
+          });
+        } else {
+          throw dbError; // Re-throw to be caught by the outer catch
+        }
       }
-
-      set({ config: savedConfig as ReceiptConfig, isLoading: false });
     } catch (error) {
       console.error('Error updating receipt configuration:', error);
       set({

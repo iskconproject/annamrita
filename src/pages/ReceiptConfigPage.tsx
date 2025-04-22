@@ -1,17 +1,31 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { ReceiptConfigForm } from '../components/receipts/ReceiptConfigForm';
 import { ReceiptPreview } from '../components/receipts/ReceiptPreview';
 import { useReceiptConfigStore } from '../store/receiptConfigStore';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { ReceiptConfig } from '../types/receipt';
 
 export const ReceiptConfigPage = () => {
   const { config, isLoading, error, fetchConfig, updateConfig } = useReceiptConfigStore();
+  const [previewConfig, setPreviewConfig] = useState<ReceiptConfig | null>(null);
 
   useEffect(() => {
     fetchConfig();
   }, [fetchConfig]);
+
+  // Update preview config when store config changes
+  useEffect(() => {
+    if (config) {
+      setPreviewConfig(config);
+    }
+  }, [config]);
+
+  const handleFormChange = (formData: ReceiptConfig) => {
+    // Update preview in real-time as form changes
+    setPreviewConfig(formData);
+  };
 
   const handleSubmit = async (updatedConfig: typeof config) => {
     await updateConfig(updatedConfig);
@@ -42,12 +56,13 @@ export const ReceiptConfigPage = () => {
               config={config}
               onSubmit={handleSubmit}
               isLoading={isLoading}
+              onFormChange={handleFormChange}
             />
           </div>
 
           <div>
             <h2 className="text-xl font-semibold mb-4">Preview</h2>
-            <ReceiptPreview config={config} />
+            {previewConfig && <ReceiptPreview config={previewConfig} />}
           </div>
         </div>
       </div>

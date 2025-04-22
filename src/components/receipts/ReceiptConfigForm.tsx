@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ReceiptConfig } from '../../types/receipt';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
@@ -10,26 +10,46 @@ interface ReceiptConfigFormProps {
   config: ReceiptConfig;
   onSubmit: (config: ReceiptConfig) => Promise<void>;
   isLoading: boolean;
+  onFormChange?: (formData: ReceiptConfig) => void;
 }
 
-export const ReceiptConfigForm = ({ config, onSubmit, isLoading }: ReceiptConfigFormProps) => {
+export const ReceiptConfigForm = ({ config, onSubmit, isLoading, onFormChange }: ReceiptConfigFormProps) => {
   const [formData, setFormData] = useState<ReceiptConfig>({
     ...config,
   });
 
+  // Update form data when config changes from parent
+  useEffect(() => {
+    setFormData({
+      ...config,
+    });
+  }, [config]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       [name]: value,
-    }));
+    };
+    setFormData(updatedFormData);
+
+    // Notify parent component of form changes for real-time preview
+    if (onFormChange) {
+      onFormChange(updatedFormData);
+    }
   };
 
   const handleToggleChange = (name: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
+    const updatedFormData = {
+      ...formData,
       [name]: checked,
-    }));
+    };
+    setFormData(updatedFormData);
+
+    // Notify parent component of form changes for real-time preview
+    if (onFormChange) {
+      onFormChange(updatedFormData);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

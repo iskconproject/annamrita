@@ -6,7 +6,7 @@ export const client = new Client();
 // Set Appwrite endpoint and project ID
 // These values should be replaced with actual values when deploying
 client
-  .setEndpoint('https://cloud.appwrite.io/v1')
+  .setEndpoint('https://fra.cloud.appwrite.io/v1')
   .setProject('6804a6bb003b71dee582'); // Replace with your Appwrite project ID
 
 // Initialize Appwrite services
