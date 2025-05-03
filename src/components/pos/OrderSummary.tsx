@@ -26,6 +26,7 @@ export const OrderSummary = () => {
   };
 
   const [useFallbackPrinting, setUseFallbackPrinting] = useState(false);
+  const [useSpecificPort, setUseSpecificPort] = useState(true); // Default to using USB001 port
 
   const handleCreateOrder = async () => {
     setIsPrinting(true);
@@ -41,13 +42,17 @@ export const OrderSummary = () => {
             // Use browser print dialog method if fallback is enabled
             await printReceiptFallback(order, config);
           } else {
-            // Try to print the receipt with WebUSB first
-            await printReceipt(order, config);
+            // Try to print the receipt with direct connection
+            // Pass the useSpecificPort flag to target USB001 port
+            await printReceipt(order, config, useSpecificPort);
           }
           // If we get here, printing was successful
-        } catch (printError: any) {
+        } catch (error: unknown) {
           // Handle specific print errors
-          console.error('Print error:', printError);
+          console.error('Print error:', error);
+
+          // Cast to Error if possible for type safety
+          const printError = error instanceof Error ? error : new Error(String(error));
 
           // If this is a WebUSB error and we haven't tried fallback yet, suggest it
           if (!useFallbackPrinting &&
@@ -64,13 +69,11 @@ export const OrderSummary = () => {
           }
 
           // Show detailed error in console for debugging
-          if (printError instanceof Error) {
-            console.error('Print error details:', {
-              message: printError.message,
-              stack: printError.stack,
-              name: printError.name
-            });
-          }
+          console.error('Print error details:', {
+            message: printError.message,
+            stack: printError.stack,
+            name: printError.name
+          });
         }
       }
     } catch (error) {
@@ -155,20 +158,38 @@ export const OrderSummary = () => {
             </div>
           )}
 
-          <div className="flex items-center mt-4">
-            <button
-              onClick={togglePrintingMethod}
-              type="button"
-              className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
-            >
-              <span className={`mr-2 ${useFallbackPrinting ? 'bg-blue-500' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
-              {useFallbackPrinting ? 'Using Browser Printing' : 'Use Browser Printing'}
-            </button>
+          <div className="flex flex-col mt-4 space-y-2">
+            <div className="flex items-center">
+              <button
+                onClick={togglePrintingMethod}
+                type="button"
+                className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+              >
+                <span className={`mr-2 ${useFallbackPrinting ? 'bg-blue-500' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+                {useFallbackPrinting ? 'Using Browser Printing' : 'Use Browser Printing'}
+              </button>
 
-            {useFallbackPrinting && (
-              <span className="ml-2 text-xs text-gray-500">
-                (Will open print dialog)
-              </span>
+              {useFallbackPrinting && (
+                <span className="ml-2 text-xs text-gray-500">
+                  (Will open print dialog)
+                </span>
+              )}
+            </div>
+
+            {!useFallbackPrinting && (
+              <div className="flex items-center">
+                <button
+                  onClick={() => setUseSpecificPort(!useSpecificPort)}
+                  type="button"
+                  className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  <span className={`mr-2 ${useSpecificPort ? 'bg-blue-500' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+                  {useSpecificPort ? 'Using USB001 Port' : 'Use USB001 Port'}
+                </button>
+                <span className="ml-2 text-xs text-gray-500">
+                  (Direct connection to printer)
+                </span>
+              </div>
             )}
           </div>
 

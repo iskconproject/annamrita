@@ -23,7 +23,8 @@ export const OrderList = ({ orders, showStatusControls = false }: OrderListProps
 
   const handleReprintReceipt = async (order: Order) => {
     try {
-      await printReceipt(order, config);
+      // Use the USB001 port by default for reprinting
+      await printReceipt(order, config, true);
     } catch (error) {
       console.error('Error reprinting receipt:', error);
       alert('Failed to print receipt. Please check printer connection.');

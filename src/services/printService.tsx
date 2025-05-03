@@ -53,7 +53,7 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
 };
 
 // Function to print receipt using Web Serial API
-export const printReceipt = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
+export const printReceipt = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG, useSpecificPort: boolean = false): Promise<boolean> => {
   try {
     // Check if Web Serial API is supported
     if (!navigator.serial) {
@@ -73,7 +73,37 @@ export const printReceipt = async (order: Order, config: ReceiptConfig = DEFAULT
       // First try to get any previously connected ports
       const ports = await navigator.serial.getPorts();
 
-      if (ports.length > 0) {
+      if (useSpecificPort) {
+        // Try to find the USB001 port specifically
+        console.log('Attempting to use specific port USB001...');
+
+        // Get all available ports
+        const availablePorts = await navigator.serial.getPorts();
+
+        // Look for a port with USB001 in the info (if available)
+        // Note: This is implementation-dependent and may need adjustment
+        const targetPort = availablePorts.find(p => {
+          // The port info might be available in different ways depending on the browser
+          // This is a best effort attempt to identify the USB001 port
+          // Using toString() as a fallback since getInfo() might not be available in all browsers
+          return p.toString().includes('USB001');
+        });
+
+        if (targetPort) {
+          port = targetPort;
+          console.log('Found and using specific USB001 port');
+        } else if (ports.length > 0) {
+          // Fallback to first available port if USB001 not found
+          port = ports[0];
+          console.log('Specific USB001 port not found, using first available port:', port);
+        } else {
+          // If no ports are available, request one
+          console.log('No ports available, requesting port...');
+          port = await navigator.serial.requestPort({
+            filters: [] // No filters to allow selection of any port
+          });
+        }
+      } else if (ports.length > 0) {
         // Use the first available port (likely the printer)
         port = ports[0];
         console.log('Using previously authorized port:', port);
@@ -82,7 +112,6 @@ export const printReceipt = async (order: Order, config: ReceiptConfig = DEFAULT
         console.log('No previously authorized ports found, requesting port...');
         port = await navigator.serial.requestPort({
           // Optional filters to help user select the right device
-          // You can add specific filters if you know details about your printer
           filters: []
         });
       }
@@ -297,8 +326,10 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
       </html>
     `;
 
-    // Write the HTML to the new window
-    printWindow.document.write(receiptHTML);
+    // Set the HTML content of the new window
+    printWindow.document.open();
+    // Using innerHTML to avoid document.write deprecation
+    printWindow.document.documentElement.innerHTML = receiptHTML.replace(/<!DOCTYPE html>|<html>|<\/html>/gi, '');
     printWindow.document.close();
 
     return true;
