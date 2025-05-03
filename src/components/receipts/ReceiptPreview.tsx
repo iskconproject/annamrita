@@ -1,6 +1,6 @@
 import { ReceiptConfig } from '../../types/receipt';
 import { Card, CardContent } from '../../components/ui/card';
-import { Order, OrderItem } from '../../types/order';
+import { Order } from '../../types/order';
 
 interface ReceiptPreviewProps {
   config: ReceiptConfig;
@@ -67,17 +67,17 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
           </div>
 
           {/* Receipt preview */}
-          <div className="p-4 font-mono text-sm bg-white" style={{ maxWidth: '350px', margin: '0 auto' }}>
+          <div className="p-4 font-mono text-sm bg-white" style={{ maxWidth: '250px', margin: '0 auto' }}>
             <div className="receipt-preview" style={{
               border: '1px dashed #ccc',
-              padding: '1rem',
+              padding: '0.75rem',
               backgroundColor: '#fff',
               fontFamily: 'monospace',
               fontSize: '0.75rem',
               lineHeight: '1.2',
               whiteSpace: 'pre-wrap',
               width: '100%',
-              maxWidth: '300px',
+              maxWidth: '220px', /* Adjusted to match 48mm thermal printer width */
               margin: '0 auto'
             }}>
               {/* Header */}
@@ -112,7 +112,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
                 {sampleOrder.items.map((item, index) => (
                   <div key={index} className="ml-2">
                     <div className="flex justify-between">
-                      <span>{item.quantity} x {item.name}</span>
+                      <span>{item.quantity} x {item.shortName || item.name}</span>
                       <span>Rs.{(item.price * item.quantity).toFixed(2)}</span>
                     </div>
                     <div className="text-xs ml-4">

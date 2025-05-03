@@ -22,7 +22,7 @@ const formatTime = (date: Date): string => {
 // Function to generate receipt JSX
 export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG) => {
   return (
-    <Printer type="epson" width={42}>
+    <Printer type="epson" width={32}>
       <Text align="center" size={{ width: 2, height: 2 }}>{config.headerText}</Text>
       <Br />
       <Line />
@@ -37,7 +37,7 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
       {order.items.map((item, index) => (
         <div key={index}>
           <Row
-            left={`${item.quantity} x ${item.name}`}
+            left={`${item.quantity} x ${item.shortName || item.name}`}
             right={`Rs.${(item.price * item.quantity).toFixed(2)}`}
           />
           <Text>{`  @ Rs.${item.price.toFixed(2)} each`}</Text>
@@ -205,7 +205,7 @@ export const generateReceiptContent = (order: Order, config: ReceiptConfig = DEF
   receipt += '------------------------\n';
   order.items.forEach(item => {
     const itemTotal = item.price * item.quantity;
-    receipt += `${item.quantity} x ${item.name}\n`;
+    receipt += `${item.quantity} x ${item.shortName || item.name}\n`;
     receipt += `  @ Rs.${item.price.toFixed(2)} = Rs.${itemTotal.toFixed(2)}\n`;
   });
   receipt += '------------------------\n';
@@ -238,9 +238,9 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           body {
             font-family: 'Courier New', monospace;
             font-size: 12px;
-            width: 300px;
+            width: 220px; /* Adjusted for 48mm printer */
             margin: 0 auto;
-            padding: 10px;
+            padding: 8px;
           }
           .header {
             text-align: center;
@@ -271,10 +271,10 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           @media print {
             body {
               width: 100%;
-              max-width: 300px;
+              max-width: 220px; /* Adjusted for 48mm printer */
             }
             @page {
-              size: 80mm 297mm; /* Standard thermal receipt size */
+              size: 58mm 297mm; /* 58mm thermal receipt size (48mm printable) */
               margin: 0;
             }
           }
@@ -294,7 +294,7 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           <div style="border-bottom: 1px dashed #000; margin-bottom: 5px;">Items:</div>
           ${order.items.map(item => `
             <div class="item">
-              <div>${item.quantity} x ${item.name}</div>
+              <div>${item.quantity} x ${item.shortName || item.name}</div>
               <div style="display: flex; justify-content: space-between;">
                 <span>  @ Rs.${item.price.toFixed(2)} each</span>
                 <span>Rs.${(item.price * item.quantity).toFixed(2)}</span>

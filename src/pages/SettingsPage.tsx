@@ -9,15 +9,13 @@ import { ReceiptConfigForm } from '@/components/receipts/ReceiptConfigForm';
 import { ReceiptPreview } from '@/components/receipts/ReceiptPreview';
 import { MenuItemDialog } from '@/components/menu/MenuItemDialog';
 import { MenuItemGrid } from '@/components/menu/MenuItemGrid';
-import { MenuItemList } from '@/components/menu/MenuItemList';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { MenuItem } from '@/types/menu';
 import { CategoriesManagement } from '@/components/categories/CategoriesManagement';
 
 export const SettingsPage = () => {
   // Receipt config state
-  const { config, isLoading: receiptLoading, error: receiptError, fetchConfig, updateConfig } = useReceiptConfigStore();
+  const { config, isLoading: receiptLoading, fetchConfig, updateConfig } = useReceiptConfigStore();
   const [previewConfig, setPreviewConfig] = useState(config || {
     headerText: 'ISKCON Asansol Rath Yatra',
     footerText: 'Thank you for your support!',
@@ -28,12 +26,10 @@ export const SettingsPage = () => {
   const { items, categories, fetchMenuItems, fetchCategories, addMenuItem, updateMenuItem, deleteMenuItem, isLoading: menuLoading } = useMenuStore();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Users state
-  const { users, fetchUsers, addUser, deleteUser, isLoading: usersLoading } = useAuthStore();
+  const { users, fetchUsers } = useAuthStore();
 
   // Active section state
   const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'users' | 'categories'>('receipt');
