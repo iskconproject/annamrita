@@ -4,7 +4,7 @@ import { useOrderStore } from '../store/orderStore';
 import { Order } from '../types/order';
 
 export const ReportsPage = () => {
-  const { orders, fetchOrders, isLoading } = useOrderStore();
+  const { orders, fetchOrders } = useOrderStore();
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -19,7 +19,7 @@ export const ReportsPage = () => {
     // Set default date range to current month
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+
     setStartDate(formatDateForInput(firstDay));
     setEndDate(formatDateForInput(today));
   }, []);
@@ -37,24 +37,24 @@ export const ReportsPage = () => {
   const filterOrders = () => {
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
-    
+
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
-    
+
     const filtered = orders.filter(order => {
       const orderDate = new Date(order.createdAt);
       return orderDate >= start && orderDate <= end;
     });
-    
+
     setFilteredOrders(filtered);
-    
+
     // Calculate total sales
     const total = filtered.reduce((sum, order) => sum + order.total, 0);
     setTotalSales(total);
-    
+
     // Calculate top selling items
     const itemsMap = new Map<string, { quantity: number; revenue: number }>();
-    
+
     filtered.forEach(order => {
       order.items.forEach(item => {
         const existing = itemsMap.get(item.name) || { quantity: 0, revenue: 0 };
@@ -64,7 +64,7 @@ export const ReportsPage = () => {
         });
       });
     });
-    
+
     const topItemsArray = Array.from(itemsMap.entries())
       .map(([name, data]) => ({
         name,
@@ -73,14 +73,14 @@ export const ReportsPage = () => {
       }))
       .sort((a, b) => b.quantity - a.quantity)
       .slice(0, 10);
-    
+
     setTopItems(topItemsArray);
   };
 
   const exportToCSV = () => {
     // Create CSV content
     let csvContent = 'Order ID,Date,Time,Items,Total,Status\n';
-    
+
     filteredOrders.forEach(order => {
       const date = new Date(order.createdAt).toLocaleDateString();
       const time = new Date(order.createdAt).toLocaleTimeString();
@@ -93,10 +93,10 @@ export const ReportsPage = () => {
         order.total.toFixed(2),
         order.status,
       ];
-      
+
       csvContent += row.join(',') + '\n';
     });
-    
+
     // Create and download the file
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -113,7 +113,7 @@ export const ReportsPage = () => {
     <Layout>
       <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-        
+
         {/* Date Range Selector */}
         <div className="flex flex-wrap items-end mt-6 space-y-4 sm:space-y-0 sm:space-x-4">
           <div>
@@ -128,7 +128,7 @@ export const ReportsPage = () => {
               className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
             <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
               End Date
@@ -141,7 +141,7 @@ export const ReportsPage = () => {
               className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
             />
           </div>
-          
+
           <div>
             <button
               onClick={exportToCSV}
@@ -152,19 +152,19 @@ export const ReportsPage = () => {
             </button>
           </div>
         </div>
-        
+
         {/* Summary Cards */}
         <div className="grid grid-cols-1 gap-5 mt-6 sm:grid-cols-2 lg:grid-cols-3">
           <div className="p-5 bg-white rounded-lg shadow">
             <h2 className="text-lg font-medium text-gray-900">Total Orders</h2>
             <p className="mt-2 text-3xl font-bold text-indigo-600">{filteredOrders.length}</p>
           </div>
-          
+
           <div className="p-5 bg-white rounded-lg shadow">
             <h2 className="text-lg font-medium text-gray-900">Total Sales</h2>
             <p className="mt-2 text-3xl font-bold text-indigo-600">₹{totalSales.toFixed(2)}</p>
           </div>
-          
+
           <div className="p-5 bg-white rounded-lg shadow">
             <h2 className="text-lg font-medium text-gray-900">Average Order Value</h2>
             <p className="mt-2 text-3xl font-bold text-indigo-600">
@@ -172,11 +172,11 @@ export const ReportsPage = () => {
             </p>
           </div>
         </div>
-        
+
         {/* Top Selling Items */}
         <div className="mt-8">
           <h2 className="text-lg font-medium text-gray-900">Top Selling Items</h2>
-          
+
           <div className="mt-4 overflow-hidden bg-white shadow sm:rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -215,7 +215,7 @@ export const ReportsPage = () => {
                     </td>
                   </tr>
                 ))}
-                
+
                 {topItems.length === 0 && (
                   <tr>
                     <td colSpan={3} className="px-6 py-4 text-center whitespace-nowrap">

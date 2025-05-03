@@ -32,7 +32,7 @@ export const detectSerialPorts = async (): Promise<void> => {
 };
 
 // Function to request access to a printer serial port and log its details
-export const identifyPrinter = async (): Promise<void> => {
+export const identifyPrinter = async (): Promise<SerialPort | void> => {
   try {
     if (!navigator.serial) {
       console.error('Web Serial API is not supported in this browser');

@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { databases, DATABASE_ID, MENU_ITEMS_COLLECTION_ID, CATEGORIES_COLLECTION_ID } from '../services/appwrite';
 import { MenuItem } from '../types/menu';
 import { Category } from '../types/category';
-import { ID, Query } from 'appwrite';
+import { ID } from 'appwrite';
 
 interface MenuState {
   items: MenuItem[];

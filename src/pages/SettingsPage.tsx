@@ -128,7 +128,7 @@ export const SettingsPage = () => {
     loadData();
 
     // Empty dependency array ensures this only runs once when the component mounts
-  }, []);
+  }, [config, categories, items, users, fetchConfig, fetchCategories, fetchMenuItems, fetchUsers]);
 
   // Update preview config when store config changes
   useEffect(() => {

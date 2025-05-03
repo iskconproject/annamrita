@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, SubmitHandler, UseFormReturn } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -22,7 +22,7 @@ interface MenuItemDialogProps {
 export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit }: MenuItemDialogProps) {
   const [newCategory, setNewCategory] = useState("");
   const form = useForm<MenuItemFormValues>({
-    resolver: zodResolver(menuItemSchema),
+    resolver: zodResolver(menuItemSchema) as any,
     defaultValues: {
       name: "",
       shortName: "",
@@ -30,7 +30,7 @@ export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit 
       price: 0,
       available: true,
     },
-  });
+  }) as UseFormReturn<MenuItemFormValues>;
 
   // Reset form when dialog opens/closes or when editing a different item
   useEffect(() => {
@@ -57,7 +57,7 @@ export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit 
     }
   }, [open, item, form]);
 
-  const handleSubmit = (values: MenuItemFormValues) => {
+  const handleSubmit: SubmitHandler<MenuItemFormValues> = (values) => {
     onSubmit(values);
     onOpenChange(false);
   };
