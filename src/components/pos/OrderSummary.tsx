@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
-import { printReceipt } from '../../services/printService.tsx';
+import { printReceipt, printReceiptFallback } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 
 export const OrderSummary = () => {
@@ -25,6 +25,8 @@ export const OrderSummary = () => {
     }
   };
 
+  const [useFallbackPrinting, setUseFallbackPrinting] = useState(false);
+
   const handleCreateOrder = async () => {
     setIsPrinting(true);
     setPrintError(null);
@@ -34,11 +36,41 @@ export const OrderSummary = () => {
       const order = await createOrder(phone);
 
       if (order) {
-        // Try to print the receipt with the configured settings
-        const printed = await printReceipt(order, config);
+        try {
+          if (useFallbackPrinting) {
+            // Use browser print dialog method if fallback is enabled
+            await printReceiptFallback(order, config);
+          } else {
+            // Try to print the receipt with WebUSB first
+            await printReceipt(order, config);
+          }
+          // If we get here, printing was successful
+        } catch (printError: any) {
+          // Handle specific print errors
+          console.error('Print error:', printError);
 
-        if (!printed) {
-          setPrintError('Failed to print receipt. Please check printer connection.');
+          // If this is a WebUSB error and we haven't tried fallback yet, suggest it
+          if (!useFallbackPrinting &&
+              (printError.name === 'SecurityError' ||
+               printError.message?.includes('Access denied') ||
+               printError.message?.includes('No compatible printer'))) {
+            setPrintError(
+              'Failed to print using direct printer connection. ' +
+              'Would you like to try printing using the browser print dialog instead? ' +
+              'Click "Use Browser Printing" below.'
+            );
+          } else {
+            setPrintError(printError.message || 'Failed to print receipt. Please check printer connection.');
+          }
+
+          // Show detailed error in console for debugging
+          if (printError instanceof Error) {
+            console.error('Print error details:', {
+              message: printError.message,
+              stack: printError.stack,
+              name: printError.name
+            });
+          }
         }
       }
     } catch (error) {
@@ -48,6 +80,11 @@ export const OrderSummary = () => {
       setIsPrinting(false);
       setPhoneNumber('');
     }
+  };
+
+  const togglePrintingMethod = () => {
+    setUseFallbackPrinting(!useFallbackPrinting);
+    setPrintError(null);
   };
 
   const total = calculateTotal();
@@ -118,6 +155,23 @@ export const OrderSummary = () => {
             </div>
           )}
 
+          <div className="flex items-center mt-4">
+            <button
+              onClick={togglePrintingMethod}
+              type="button"
+              className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+            >
+              <span className={`mr-2 ${useFallbackPrinting ? 'bg-blue-500' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+              {useFallbackPrinting ? 'Using Browser Printing' : 'Use Browser Printing'}
+            </button>
+
+            {useFallbackPrinting && (
+              <span className="ml-2 text-xs text-gray-500">
+                (Will open print dialog)
+              </span>
+            )}
+          </div>
+
           <div className="flex mt-6 space-x-4">
             <button
               onClick={clearCurrentOrder}
@@ -131,7 +185,7 @@ export const OrderSummary = () => {
               disabled={currentOrder.length === 0 || isPrinting}
               className="flex-1 px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
             >
-              {isPrinting ? 'Processing...' : 'Print & Complete'}
+              {isPrinting ? 'Processing...' : useFallbackPrinting ? 'Print with Browser & Complete' : 'Print & Complete'}
             </button>
           </div>
         </div>

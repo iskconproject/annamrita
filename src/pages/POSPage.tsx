@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { MenuItemCard } from '../components/pos/MenuItemCard';
 import { OrderSummary } from '../components/pos/OrderSummary';
+import { PrinterDiagnostics } from '../components/pos/PrinterDiagnostics';
 import { useMenuStore } from '../store/menuStore';
-import { Category } from '@/types/category';
 
 export const POSPage = () => {
   const { items, categories, fetchMenuItems, isLoading } = useMenuStore();
@@ -76,6 +76,7 @@ export const POSPage = () => {
           {/* Order Summary */}
           <div>
             <OrderSummary />
+            <PrinterDiagnostics />
           </div>
         </div>
       </div>
