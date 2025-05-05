@@ -9,6 +9,7 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   addUser: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
   fetchUsers: () => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
@@ -96,6 +97,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.error('Login error:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to login',
+        isLoading: false
+      });
+    }
+  },
+
+  register: async (email: string, password: string, name: string, role: UserRole) => {
+    set({ isLoading: true, error: null });
+    try {
+      // Create the user in Appwrite auth
+      const response = await account.create(
+        ID.unique(),
+        email,
+        password,
+        name
+      );
+
+      // Store user details with role in the database
+      await databases.createDocument(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        ID.unique(),
+        {
+          userId: response.$id,
+          email: response.email,
+          name: response.name,
+          role: role
+        }
+      );
+
+      // Automatically log in the user after registration
+      await get().login(email, password);
+
+      set({ isLoading: false });
+    } catch (error) {
+      console.error('Registration error:', error);
+      set({
+        error: error instanceof Error ? error.message : 'Failed to register',
         isLoading: false
       });
     }
