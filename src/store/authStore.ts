@@ -50,38 +50,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Account details:', accountDetails);
 
       // Determine if this is the admin user
-      const isAdmin = accountDetails.email === ADMIN_EMAIL;
+      const isAdmin = email === ADMIN_EMAIL || accountDetails.labels.includes('admin');
 
-      // Try to fetch user role from database
-      let userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
-
-      try {
-        const userDocs = await databases.listDocuments(
-          DATABASE_ID,
-          USERS_COLLECTION_ID,
-          [Query.equal('email', accountDetails.email)]
-        );
-
-        if (userDocs.documents.length > 0) {
-          userRole = userDocs.documents[0].role as UserRole;
-        } else if (isAdmin) {
-          // If admin user doesn't exist in the database yet, create it
-          await databases.createDocument(
-            DATABASE_ID,
-            USERS_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: accountDetails.$id,
-              email: accountDetails.email,
-              name: accountDetails.name,
-              role: 'admin'
-            }
-          );
-        }
-      } catch (dbError) {
-        console.warn('Error fetching user role from database:', dbError);
-        // If database error, default to admin for the admin email, volunteer for others
-      }
+      // Set user role based on admin status
+      const userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
 
       const user: User = {
         id: accountDetails.$id,
@@ -309,38 +281,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       console.log('Account details retrieved:', accountDetails);
 
       // Determine if this is the admin user
-      const isAdmin = accountDetails.email === ADMIN_EMAIL;
+      const isAdmin = accountDetails.email === ADMIN_EMAIL || accountDetails.labels.includes('admin');
 
-      // Try to fetch user role from database
-      let userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
-
-      try {
-        const userDocs = await databases.listDocuments(
-          DATABASE_ID,
-          USERS_COLLECTION_ID,
-          [Query.equal('email', accountDetails.email)]
-        );
-
-        if (userDocs.documents.length > 0) {
-          userRole = userDocs.documents[0].role as UserRole;
-        } else if (isAdmin) {
-          // If admin user doesn't exist in the database yet, create it
-          await databases.createDocument(
-            DATABASE_ID,
-            USERS_COLLECTION_ID,
-            ID.unique(),
-            {
-              userId: accountDetails.$id,
-              email: accountDetails.email,
-              name: accountDetails.name,
-              role: 'admin'
-            }
-          );
-        }
-      } catch (dbError) {
-        console.warn('Error fetching user role from database:', dbError);
-        // If database error, default to admin for the admin email, volunteer for others
-      }
+      // Set user role based on admin status
+      const userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
 
       const user: User = {
         id: accountDetails.$id,

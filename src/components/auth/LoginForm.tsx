@@ -7,7 +7,7 @@ import { PasswordInput } from '@/components/ui/password-input';
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('arindamdawn3@gmail.com');
-  const [password, setPassword] = useState('HareKrishna@108');
+  const [password, setPassword] = useState('');
   const { login, isLoading, error } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
