@@ -102,7 +102,7 @@ export const OrderSummary = () => {
           <p className="text-sm text-gray-400 mt-2">Select items from the menu to add them to your order</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 text-left text-sm">
           <div className="max-h-[300px] overflow-y-auto pr-2">
             {currentOrder.map((item) => (
               <div key={item.itemId} className="flex items-center justify-between py-3 border-b border-gray-100">

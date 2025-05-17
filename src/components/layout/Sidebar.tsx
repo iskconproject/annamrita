@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import {
@@ -55,7 +56,7 @@ export const Sidebar = () => {
     }
   ];
 
-  const filteredNavItems = navItems.filter(item => 
+  const filteredNavItems = navItems.filter(item =>
     item.showFor.includes(user?.role || '')
   );
 
@@ -90,12 +91,20 @@ export const Sidebar = () => {
               className={cn(
                 "flex flex-col items-center justify-center w-14 h-14 rounded-lg text-sm font-medium transition-colors",
                 location.pathname === item.path
-                  ? "text-white bg-iskcon-primary"
+                  ? "text-iskcon-primary border-iskcon-primary"
                   : "text-gray-600 hover:text-iskcon-primary hover:bg-iskcon-light"
               )}
             >
-              {item.icon}
-              <span className="mt-1 text-xs">{item.name}</span>
+              {React.cloneElement(item.icon, {
+                className: cn(
+                  "w-5 h-5",
+                  location.pathname === item.path ? "text-iskcon-primary" : ""
+                )
+              })}
+              <span className={cn(
+                "mt-1 text-xs",
+                location.pathname === item.path ? "font-semibold" : ""
+              )}>{item.name}</span>
             </Link>
           ))}
         </div>
@@ -141,12 +150,20 @@ export const Sidebar = () => {
                   className={cn(
                     "flex items-center px-4 py-3 rounded-md text-sm font-medium transition-colors",
                     location.pathname === item.path
-                      ? "text-white bg-iskcon-primary"
+                      ? "text-iskcon-primary border-l-4 border-iskcon-primary"
                       : "text-gray-600 hover:text-iskcon-primary hover:bg-iskcon-light"
                   )}
                 >
-                  {item.icon}
-                  <span className="ml-3">{item.name}</span>
+                  {React.cloneElement(item.icon, {
+                    className: cn(
+                      "w-5 h-5",
+                      location.pathname === item.path ? "text-iskcon-primary" : ""
+                    )
+                  })}
+                  <span className={cn(
+                    "ml-3",
+                    location.pathname === item.path ? "font-semibold" : ""
+                  )}>{item.name}</span>
                 </Link>
               ))}
             </div>

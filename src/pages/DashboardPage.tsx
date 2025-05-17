@@ -118,7 +118,7 @@ export const DashboardPage = () => {
       <div className="p-6">
         {/* Header with welcome message and user info */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
-          <div>
+          <div className='text-left'>
             <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
             <p className="text-gray-600">Welcome back, {user?.name || 'User'}</p>
           </div>
