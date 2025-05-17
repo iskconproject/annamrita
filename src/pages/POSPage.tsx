@@ -4,6 +4,7 @@ import { MenuItemCard } from '../components/pos/MenuItemCard';
 import { OrderSummary } from '../components/pos/OrderSummary';
 import { PrinterDiagnostics } from '../components/pos/PrinterDiagnostics';
 import { useMenuStore } from '../store/menuStore';
+import { cn } from '@/lib/utils';
 
 export const POSPage = () => {
   const { items, categories, fetchMenuItems, isLoading } = useMenuStore();
@@ -26,21 +27,28 @@ export const POSPage = () => {
 
   return (
     <Layout>
-      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Point of Sale</h1>
+      <div className="p-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Point of Sale</h1>
+          <div className="mt-4 md:mt-0">
+            {/* Any additional header actions can go here */}
+          </div>
+        </div>
 
-        <div className="grid grid-cols-1 gap-6 mt-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Menu Section */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-4">
             {/* Category Tabs */}
-            <div className="mb-4 border-b border-gray-200">
-              <nav className="flex -mb-px space-x-8">
+            <div className="mb-6 overflow-x-auto">
+              <nav className="flex space-x-4 min-w-max">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`py-4 text-sm font-medium border-b-2 ${selectedCategory === 'all'
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
+                  className={cn(
+                    "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                    selectedCategory === 'all'
+                      ? 'bg-iskcon-primary text-white'
+                      : 'text-gray-600 hover:bg-iskcon-light hover:text-iskcon-primary'
+                  )}
                 >
                   All Menu
                 </button>
@@ -48,10 +56,12 @@ export const POSPage = () => {
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.name)}
-                    className={`py-4 text-sm font-medium border-b-2 ${selectedCategory === category.name
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }`}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                      selectedCategory === category.name
+                        ? 'bg-iskcon-primary text-white'
+                        : 'text-gray-600 hover:bg-iskcon-light hover:text-iskcon-primary'
+                    )}
                   >
                     {category.name}
                   </button>
@@ -74,7 +84,7 @@ export const POSPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div>
+          <div className="bg-white rounded-lg shadow-sm p-4">
             <OrderSummary />
             <PrinterDiagnostics />
           </div>

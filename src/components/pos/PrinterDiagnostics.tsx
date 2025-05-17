@@ -63,7 +63,7 @@ export const PrinterDiagnostics = () => {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="mt-4 px-3 py-1 text-xs text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200"
+        className="mt-4 px-3 py-1 text-xs text-iskcon-primary bg-iskcon-light rounded-md hover:bg-opacity-80"
       >
         Printer Diagnostics
       </button>
@@ -97,7 +97,7 @@ export const PrinterDiagnostics = () => {
   };
 
   return (
-    <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+    <div className="mt-4 p-4 border border-gray-100 rounded-md bg-gray-50">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-sm font-medium text-gray-700">Printer Diagnostics</h3>
         <button
@@ -113,7 +113,7 @@ export const PrinterDiagnostics = () => {
           <button
             onClick={handleDetectPorts}
             disabled={isLoading}
-            className="px-3 py-1 text-xs text-white bg-blue-500 rounded-md hover:bg-blue-600 disabled:bg-blue-300"
+            className="px-3 py-1 text-xs text-white bg-iskcon-primary rounded-md hover:bg-iskcon-dark disabled:opacity-70"
           >
             Detect Serial Ports
           </button>
@@ -121,7 +121,7 @@ export const PrinterDiagnostics = () => {
           <button
             onClick={handleIdentifyPrinter}
             disabled={isLoading}
-            className="px-3 py-1 text-xs text-white bg-green-500 rounded-md hover:bg-green-600 disabled:bg-green-300"
+            className="px-3 py-1 text-xs text-white bg-iskcon-primary rounded-md hover:bg-iskcon-dark disabled:opacity-70"
           >
             Select Printer Port
           </button>
@@ -143,53 +143,53 @@ export const PrinterDiagnostics = () => {
           <button
             onClick={handleTestConnection}
             disabled={isLoading}
-            className="px-3 py-1 text-xs text-white bg-purple-500 rounded-md hover:bg-purple-600 disabled:bg-purple-300"
+            className="px-3 py-1 text-xs text-white bg-iskcon-primary rounded-md hover:bg-iskcon-dark disabled:opacity-70"
           >
             Test Connection
           </button>
         </div>
 
         {diagnosticResult && (
-          <div className="p-2 text-xs bg-white border border-gray-200 rounded-md">
+          <div className="p-2 text-xs bg-white border border-gray-100 rounded-md">
             {diagnosticResult}
           </div>
         )}
 
         <button
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="text-xs text-blue-600 hover:text-blue-800 flex items-center"
+          className="text-xs text-iskcon-primary hover:text-iskcon-dark flex items-center"
         >
           {showAdvanced ? '▼ Hide' : '▶ Show'} Advanced Options
         </button>
 
         {showAdvanced && (
-          <div className="p-2 border border-gray-200 rounded-md bg-white">
+          <div className="p-2 border border-gray-100 rounded-md bg-white">
             <h4 className="text-xs font-medium text-gray-700 mb-2">Advanced Options</h4>
             <div className="space-y-2">
               <button
                 onClick={openChromeSerialSettings}
-                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-iskcon-light rounded-md hover:bg-opacity-80"
               >
                 Reset Chrome Serial Permissions
               </button>
 
               <button
                 onClick={openWindowsPrinterTroubleshooter}
-                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-iskcon-light rounded-md hover:bg-opacity-80"
               >
                 Open Windows Printer Troubleshooter
               </button>
 
               <button
                 onClick={openDeviceManager}
-                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-iskcon-light rounded-md hover:bg-opacity-80"
               >
                 Open Device Manager
               </button>
 
               <button
                 onClick={testBrowserPrint}
-                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                className="w-full px-3 py-1 text-xs text-left text-gray-700 bg-iskcon-light rounded-md hover:bg-opacity-80"
               >
                 Test Browser Print Dialog
               </button>
@@ -226,8 +226,8 @@ export const PrinterDiagnostics = () => {
             <li>Some printers require specific initialization commands</li>
           </ul>
 
-          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="font-medium text-blue-700">Need to reset Serial permissions?</p>
+          <div className="mt-3 p-2 bg-iskcon-light border border-iskcon-primary/20 rounded-md">
+            <p className="font-medium text-iskcon-primary">Need to reset Serial permissions?</p>
             <p className="mt-1">
               In Chrome, go to chrome://settings/content/serialPorts to manage serial port permissions.
               You can remove previously granted permissions and try again.
