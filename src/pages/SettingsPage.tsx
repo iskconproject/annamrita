@@ -243,31 +243,44 @@ export const SettingsPage = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Menu Management</CardTitle>
-                    <CardDescription>
-                      Manage menu items, prices, and availability
+                    <CardDescription className="flex items-center justify-between">
+                      <span>Manage menu items, prices, and availability</span>
+                      <div className="flex gap-3 text-xs">
+                        <span className="px-2 py-1 bg-iskcon-light text-iskcon-primary rounded-full">
+                          {items.length} Items
+                        </span>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full">
+                          {categories.length} Categories
+                        </span>
+                      </div>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center space-x-2">
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="relative w-full max-w-sm">
+                          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                            <svg className="w-4 h-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                              <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                            </svg>
+                          </div>
                           <input
                             type="text"
-                            placeholder="Search items..."
+                            placeholder="Search menu items..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="px-3 py-2 border rounded-md"
+                            className="w-full pl-10 px-3 py-2 border rounded-md focus:ring-2 focus:ring-iskcon-primary focus:border-iskcon-primary"
                           />
                         </div>
-                        <button
+                        <Button
                           onClick={() => {
                             setEditingItem(null);
                             setDialogOpen(true);
                           }}
-                          className="px-4 py-2 bg-iskcon-primary text-white rounded-md hover:bg-iskcon-primary/90"
+                          className="bg-iskcon-primary hover:bg-iskcon-primary/90"
                         >
                           Add New Item
-                        </button>
+                        </Button>
                       </div>
 
                       {menuLoading ? (
@@ -279,33 +292,71 @@ export const SettingsPage = () => {
                         </div>
                       ) : items.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-64 p-8 text-center bg-white rounded-lg shadow">
-                          <p className="text-xl text-gray-500">No menu items found</p>
-                          <p className="mt-2 text-gray-400">
+                          <div className="w-16 h-16 mb-4 rounded-full bg-iskcon-light flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-iskcon-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          </div>
+                          <p className="text-xl text-gray-700 font-medium">No menu items found</p>
+                          <p className="mt-2 text-gray-500">
                             Start by adding a new menu item
                           </p>
-                          <button
+                          <Button
                             onClick={() => {
                               setEditingItem(null);
                               setDialogOpen(true);
                             }}
-                            className="mt-4 px-4 py-2 bg-iskcon-primary text-white rounded-md hover:bg-iskcon-primary/90"
+                            className="mt-6 bg-iskcon-primary hover:bg-iskcon-primary/90"
                           >
                             Add New Item
-                          </button>
+                          </Button>
                         </div>
                       ) : (
-                        <MenuItemGrid
-                          items={items}
-                          onEdit={(item) => {
-                            setEditingItem(item);
-                            setDialogOpen(true);
-                          }}
-                          onDelete={async (id) => {
-                            if (window.confirm('Are you sure you want to delete this item?')) {
-                              await deleteMenuItem(id);
-                            }
-                          }}
-                        />
+                        <>
+                          {searchQuery && items.filter(item =>
+                            item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.shortName.toLowerCase().includes(searchQuery.toLowerCase())
+                          ).length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-64 p-8 text-center bg-white rounded-lg shadow">
+                              <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                              </div>
+                              <p className="text-xl text-gray-700 font-medium">No results found</p>
+                              <p className="mt-2 text-gray-500">
+                                No menu items match your search "{searchQuery}"
+                              </p>
+                              <Button
+                                onClick={() => setSearchQuery('')}
+                                variant="outline"
+                                className="mt-6"
+                              >
+                                Clear Search
+                              </Button>
+                            </div>
+                          ) : (
+                            <MenuItemGrid
+                              items={items.filter(item =>
+                                searchQuery ?
+                                  item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  item.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  item.shortName.toLowerCase().includes(searchQuery.toLowerCase())
+                                  : true
+                              )}
+                              onEdit={(item) => {
+                                setEditingItem(item);
+                                setDialogOpen(true);
+                              }}
+                              onDelete={async (id) => {
+                                if (window.confirm('Are you sure you want to delete this item?')) {
+                                  await deleteMenuItem(id);
+                                }
+                              }}
+                            />
+                          )}
+                        </>
                       )}
 
                       <MenuItemDialog
@@ -353,8 +404,11 @@ export const SettingsPage = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Categories Management</CardTitle>
-                    <CardDescription>
-                      Manage menu categories for better organization
+                    <CardDescription className="flex items-center justify-between">
+                      <span>Manage menu categories for better organization</span>
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                        {categories.length} Categories
+                      </span>
                     </CardDescription>
                   </CardHeader>
                   <CardContent>

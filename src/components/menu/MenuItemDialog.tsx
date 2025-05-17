@@ -118,18 +118,29 @@ export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit 
                           }
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Select a category" />
                         </SelectTrigger>
                         <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.name}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                          <SelectItem value="new-category" className="text-iskcon-primary font-medium">
-                            + Add New Category
-                          </SelectItem>
+                          {categories.length > 0 ? (
+                            <>
+                              {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.name}>
+                                  {category.name}
+                                </SelectItem>
+                              ))}
+                              <SelectItem value="new-category" className="text-iskcon-primary font-medium border-t mt-1 pt-1">
+                                + Add New Category
+                              </SelectItem>
+                            </>
+                          ) : (
+                            <div className="p-2 text-center text-sm text-gray-500">
+                              No categories found. Add a new one.
+                              <SelectItem value="new-category" className="text-iskcon-primary font-medium mt-1">
+                                + Add New Category
+                              </SelectItem>
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
 
@@ -147,6 +158,8 @@ export function MenuItemDialog({ open, onOpenChange, item, categories, onSubmit 
                                 field.onChange(value);
                               }
                             }}
+                            className="focus:ring-2 focus:ring-iskcon-primary focus:border-iskcon-primary"
+                            autoFocus
                           />
                         </div>
                       )}

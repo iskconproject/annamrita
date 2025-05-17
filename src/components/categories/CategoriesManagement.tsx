@@ -3,7 +3,7 @@ import { useMenuStore } from '@/store/menuStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Trash2, Plus, AlertCircle } from 'lucide-react';
+import { Trash2, Plus, AlertCircle, Tag } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const CategoriesManagement = () => {
@@ -33,8 +33,14 @@ export const CategoriesManagement = () => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleAddCategory();
+    }
+  };
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {error && (
         <Alert variant="destructive" className="mb-4">
           <AlertCircle className="h-4 w-4" />
@@ -43,7 +49,10 @@ export const CategoriesManagement = () => {
       )}
 
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium">Available Categories</h3>
+        <div className="flex items-center gap-2">
+          <Tag className="h-5 w-5 text-iskcon-primary" />
+          <h3 className="text-lg font-medium">Available Categories</h3>
+        </div>
         {!isAdding && !isLoading && (
           <Button
             onClick={() => setIsAdding(true)}
@@ -56,29 +65,34 @@ export const CategoriesManagement = () => {
       </div>
 
       {isAdding && (
-        <div className="flex gap-2 items-center">
-          <Input
-            value={newCategoryName}
-            onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="Enter category name"
-            className="flex-1"
-          />
-          <Button
-            onClick={handleAddCategory}
-            className="bg-iskcon-primary hover:bg-iskcon-primary/90"
-          >
-            Add
-          </Button>
-          <Button
-            onClick={() => {
-              setIsAdding(false);
-              setNewCategoryName('');
-            }}
-            variant="outline"
-          >
-            Cancel
-          </Button>
-        </div>
+        <Card className="p-4 border-iskcon-primary/30">
+          <div className="flex gap-2 items-center">
+            <Input
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Enter category name"
+              className="flex-1 focus:ring-2 focus:ring-iskcon-primary focus:border-iskcon-primary"
+              onKeyDown={handleKeyDown}
+              autoFocus
+            />
+            <Button
+              onClick={handleAddCategory}
+              className="bg-iskcon-primary hover:bg-iskcon-primary/90"
+              disabled={!newCategoryName.trim()}
+            >
+              Add
+            </Button>
+            <Button
+              onClick={() => {
+                setIsAdding(false);
+                setNewCategoryName('');
+              }}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+          </div>
+        </Card>
       )}
 
       {isLoading ? (
@@ -91,8 +105,8 @@ export const CategoriesManagement = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {categories.map((category) => (
-            <Card key={category.id} className="p-4 flex justify-between items-center">
-              <span>{category.name}</span>
+            <Card key={category.id} className="p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+              <span className="font-medium">{category.name}</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -106,8 +120,10 @@ export const CategoriesManagement = () => {
           ))}
 
           {categories.length === 0 && (
-            <div className="col-span-full text-center py-8 text-gray-500">
-              No categories found. Add your first category to get started.
+            <div className="col-span-full text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
+              <Tag className="h-10 w-10 mx-auto mb-2 text-gray-400" />
+              <p className="text-lg">No categories found</p>
+              <p className="text-sm mt-1">Add your first category to get started</p>
             </div>
           )}
         </div>
