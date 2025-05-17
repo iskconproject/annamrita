@@ -26,14 +26,48 @@ export const LoginPage = () => {
   }, [user, isLoading, navigate]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-iskcon-light to-white">
-      <div className="w-full max-w-md">
-        <LoginForm />
+    <div className="flex min-h-screen">
+      {/* Left side - Primary color background */}
+      <div className="hidden md:block md:w-1/2 bg-iskcon-primary relative overflow-hidden">
+        {/* Decorative circles */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-iskcon-secondary/20 blur-3xl"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-80 h-80 rounded-full bg-amber-500/20 blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 w-72 h-72 rounded-full bg-white/10 blur-3xl"></div>
 
-        <div className="mt-4 text-center">
-          <p className="text-sm text-iskcon-primary font-medium">
-            Contact admin for account access
-          </p>
+        {/* Subtle pattern overlay */}
+        <div className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+            backgroundSize: '20px 20px'
+          }}>
+        </div>
+
+        {/* Content */}
+        <div className="h-full w-full flex items-center justify-center relative z-20">
+          <div className="p-12 max-w-md text-center">
+            <h1 className="text-4xl font-bold text-white mb-6">Annamrita POS</h1>
+            <p className="text-white/90 text-lg mb-8">
+              Prasadam Distribution Management System
+            </p>
+            <div className="mt-12 p-6 border border-white/20 rounded-lg bg-white/5 shadow-lg relative">
+              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-iskcon-primary px-4 text-white/80 text-sm">
+                Maha Mantra
+              </div>
+              <p className="text-white/90 text-lg font-medium leading-relaxed">
+                Hare Krishna Hare Krishna<br />
+                Krishna Krishna Hare Hare<br />
+                Hare Rama Hare Rama<br />
+                Rama Rama Hare Hare
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right side - Login form */}
+      <div className="w-full md:w-1/2 flex items-center justify-center p-6 bg-white">
+        <div className="w-full max-w-md">
+          <LoginForm />
         </div>
       </div>
     </div>
