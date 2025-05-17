@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { useOrderStore } from '../store/orderStore';
 import { Order } from '../types/order';
+import { Download, FileText, RefreshCw } from 'lucide-react';
 
 export const ReportsPage = () => {
   const { orders, fetchOrders } = useOrderStore();
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [totalSales, setTotalSales] = useState(0);
   const [topItems, setTopItems] = useState<{ name: string; quantity: number; revenue: number }[]>([]);
+  const [dateRange, setDateRange] = useState('thisMonth');
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -20,8 +23,8 @@ export const ReportsPage = () => {
     const today = new Date();
     const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    setStartDate(formatDateForInput(firstDay));
-    setEndDate(formatDateForInput(today));
+    setStartDate(firstDay);
+    setEndDate(today);
   }, []);
 
   useEffect(() => {
@@ -30,11 +33,60 @@ export const ReportsPage = () => {
     }
   }, [orders, startDate, endDate]);
 
-  const formatDateForInput = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
+    setTimeout(() => setRefreshing(false), 500);
+  };
+
+  const handleDateRangeChange = (range: string) => {
+    setDateRange(range);
+    const today = new Date();
+    let start = new Date();
+
+    switch (range) {
+      case 'today':
+        start = new Date(today);
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        setEndDate(today);
+        break;
+      case 'yesterday':
+        start = new Date(today);
+        start.setDate(start.getDate() - 1);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        setStartDate(start);
+        setEndDate(end);
+        break;
+      case 'thisWeek':
+        start = new Date(today);
+        start.setDate(start.getDate() - start.getDay());
+        start.setHours(0, 0, 0, 0);
+        setStartDate(start);
+        setEndDate(today);
+        break;
+      case 'thisMonth':
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
+        setStartDate(start);
+        setEndDate(today);
+        break;
+      case 'lastMonth':
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        setStartDate(start);
+        setEndDate(lastDayOfLastMonth);
+        break;
+      case 'custom':
+        // Don't change dates, just switch to custom mode
+        break;
+    }
   };
 
   const filterOrders = () => {
+    if (!startDate || !endDate) return;
+
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
 
@@ -71,7 +123,7 @@ export const ReportsPage = () => {
         quantity: data.quantity,
         revenue: data.revenue,
       }))
-      .sort((a, b) => b.quantity - a.quantity)
+      .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 10);
 
     setTopItems(topItemsArray);
@@ -102,7 +154,7 @@ export const ReportsPage = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `sales_report_${startDate}_to_${endDate}.csv`);
+    link.setAttribute('download', `sales_report_${startDate ? startDate.toISOString().split('T')[0] : ''}_to_${endDate ? endDate.toISOString().split('T')[0] : ''}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();
@@ -111,120 +163,155 @@ export const ReportsPage = () => {
 
   return (
     <Layout>
-      <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Reports</h1>
-
-        {/* Date Range Selector */}
-        <div className="flex flex-wrap items-end mt-6 space-y-4 sm:space-y-0 sm:space-x-4">
-          <div>
-            <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">
-              Start Date
-            </label>
-            <input
-              type="date"
-              id="start-date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
+      <div className="p-6 bg-background">
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-3xl font-bold text-iskcon-primary">Reports</h1>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white rounded-md bg-iskcon-primary hover:bg-iskcon-dark"
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh Data
+              </button>
+              <button
+                onClick={exportToCSV}
+                disabled={filteredOrders.length === 0}
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-white rounded-md bg-iskcon-accent hover:bg-green-600 disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
-              End Date
-            </label>
-            <input
-              type="date"
-              id="end-date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="block w-full mt-1 border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            />
-          </div>
-
-          <div>
-            <button
-              onClick={exportToCSV}
-              disabled={filteredOrders.length === 0}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:bg-indigo-400"
-            >
-              Export to CSV
-            </button>
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 gap-5 mt-6 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="p-5 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-900">Total Orders</h2>
-            <p className="mt-2 text-3xl font-bold text-indigo-600">{filteredOrders.length}</p>
-          </div>
-
-          <div className="p-5 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-900">Total Sales</h2>
-            <p className="mt-2 text-3xl font-bold text-indigo-600">₹{totalSales.toFixed(2)}</p>
-          </div>
-
-          <div className="p-5 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-medium text-gray-900">Average Order Value</h2>
-            <p className="mt-2 text-3xl font-bold text-indigo-600">
-              ₹{filteredOrders.length > 0 ? (totalSales / filteredOrders.length).toFixed(2) : '0.00'}
-            </p>
-          </div>
-        </div>
-
-        {/* Top Selling Items */}
-        <div className="mt-8">
-          <h2 className="text-lg font-medium text-gray-900">Top Selling Items</h2>
-
-          <div className="mt-4 overflow-hidden bg-white shadow sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
+          {/* Date Range Selector */}
+          <div className="p-4 bg-white rounded-lg shadow-sm">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end">
+              <div className="flex flex-col gap-2 md:flex-row md:items-end">
+                <div>
+                  <label htmlFor="date-range" className="block mb-2 text-sm font-medium text-gray-700">
+                    Date Range
+                  </label>
+                  <select
+                    id="date-range"
+                    value={dateRange}
+                    onChange={(e) => handleDateRangeChange(e.target.value)}
+                    className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-iskcon-primary focus:border-iskcon-primary"
                   >
-                    Item
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                  >
-                    Quantity Sold
-                  </th>
-                  <th
-                    scope="col"
-                    className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase"
-                  >
-                    Revenue
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {topItems.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{item.quantity}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">₹{item.revenue.toFixed(2)}</div>
-                    </td>
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="thisWeek">This Week</option>
+                    <option value="thisMonth">This Month</option>
+                    <option value="lastMonth">Last Month</option>
+                    <option value="custom">Custom Range</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="start-date" className="block mb-2 text-sm font-medium text-gray-700">
+                    Start Date
+                  </label>
+                  <input
+                    type="date"
+                    id="start-date"
+                    value={startDate ? startDate.toISOString().split('T')[0] : ''}
+                    onChange={(e) => setStartDate(new Date(e.target.value))}
+                    className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-iskcon-primary focus:border-iskcon-primary"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="end-date" className="block mb-2 text-sm font-medium text-gray-700">
+                    End Date
+                  </label>
+                  <input
+                    type="date"
+                    id="end-date"
+                    value={endDate ? endDate.toISOString().split('T')[0] : ''}
+                    onChange={(e) => setEndDate(new Date(e.target.value))}
+                    className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-iskcon-primary focus:border-iskcon-primary"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Total Orders</h3>
+                <div className="p-2 text-white rounded-full bg-iskcon-primary">
+                  <FileText className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-bold text-iskcon-primary">{filteredOrders.length}</p>
+              <p className="mt-2 text-sm text-gray-500">
+                {startDate && endDate ? `From ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}` : ''}
+              </p>
+            </div>
+
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Total Sales</h3>
+                <div className="p-2 text-white rounded-full bg-iskcon-secondary">
+                  <Download className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-bold text-iskcon-secondary">₹{totalSales.toFixed(2)}</p>
+              <p className="mt-2 text-sm text-gray-500">
+                {startDate && endDate ? `From ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}` : ''}
+              </p>
+            </div>
+
+            <div className="p-6 bg-white rounded-lg shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-700">Average Order Value</h3>
+                <div className="p-2 text-white rounded-full bg-iskcon-accent">
+                  <Download className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="mt-4 text-3xl font-bold text-iskcon-accent">
+                ₹{filteredOrders.length > 0 ? (totalSales / filteredOrders.length).toFixed(2) : '0.00'}
+              </p>
+              <p className="mt-2 text-sm text-gray-500">
+                {startDate && endDate ? `From ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}` : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* Top Selling Items */}
+          <div className="p-6 bg-white rounded-lg shadow-sm">
+            <h3 className="mb-4 text-xl font-semibold text-iskcon-primary">Top Selling Items</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="bg-iskcon-light">
+                    <th className="p-3 text-left text-sm font-medium text-iskcon-primary">Item</th>
+                    <th className="p-3 text-left text-sm font-medium text-iskcon-primary">Quantity Sold</th>
+                    <th className="p-3 text-left text-sm font-medium text-iskcon-primary">Revenue</th>
                   </tr>
-                ))}
-
-                {topItems.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="px-6 py-4 text-center whitespace-nowrap">
-                      <div className="text-sm text-gray-500">No data available</div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {topItems.map((item, index) => (
+                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
+                      <td className="p-3 text-sm font-medium text-gray-900">{item.name}</td>
+                      <td className="p-3 text-sm text-gray-700">{item.quantity}</td>
+                      <td className="p-3 text-sm font-medium text-iskcon-primary">₹{item.revenue.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {topItems.length === 0 && (
+                    <tr>
+                      <td colSpan={3} className="p-4 text-center text-gray-500">
+                        No data available for the selected date range
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
