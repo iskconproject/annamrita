@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { MenuItemCard } from '../components/pos/MenuItemCard';
 import { OrderSummary } from '../components/pos/OrderSummary';
-import { PrinterDiagnostics } from '../components/pos/PrinterDiagnostics';
 import { useMenuStore } from '../store/menuStore';
 import { cn } from '@/lib/utils';
 
@@ -86,7 +85,6 @@ export const POSPage = () => {
           {/* Order Summary */}
           <div className="bg-white rounded-lg shadow-sm p-4">
             <OrderSummary />
-            <PrinterDiagnostics />
           </div>
         </div>
       </div>

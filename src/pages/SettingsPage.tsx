@@ -12,6 +12,7 @@ import { MenuItemGrid } from '@/components/menu/MenuItemGrid';
 import { AlertCircle } from 'lucide-react';
 import { MenuItem } from '@/types/menu';
 import { CategoriesManagement } from '@/components/categories/CategoriesManagement';
+import { PrinterSettings } from '@/components/settings/PrinterSettings';
 
 export const SettingsPage = () => {
   // Receipt config state
@@ -32,7 +33,7 @@ export const SettingsPage = () => {
   const { users, fetchUsers } = useAuthStore();
 
   // Active section state
-  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'users' | 'categories'>('receipt');
+  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'users' | 'categories' | 'printer'>('receipt');
 
   // Loading state for the entire settings page
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -206,6 +207,13 @@ export const SettingsPage = () => {
                 className={activeSection === 'categories' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
               >
                 Categories
+              </Button>
+              <Button
+                variant={activeSection === 'printer' ? 'default' : 'outline'}
+                onClick={() => setActiveSection('printer')}
+                className={activeSection === 'printer' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
+              >
+                Printer
               </Button>
             </div>
 
@@ -415,6 +423,10 @@ export const SettingsPage = () => {
                     <CategoriesManagement />
                   </CardContent>
                 </Card>
+              )}
+
+              {activeSection === 'printer' && (
+                <PrinterSettings />
               )}
             </div>
           </>

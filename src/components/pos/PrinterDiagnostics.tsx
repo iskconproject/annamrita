@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { detectSerialPorts, identifyPrinter, testSerialConnection, COMMON_BAUD_RATES } from '../../utils/printerUtils';
 
-export const PrinterDiagnostics = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface PrinterDiagnosticsProps {
+  initialOpen?: boolean;
+}
+
+export const PrinterDiagnostics = ({ initialOpen = false }: PrinterDiagnosticsProps) => {
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [diagnosticResult, setDiagnosticResult] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
