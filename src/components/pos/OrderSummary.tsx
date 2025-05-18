@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
 import { printReceipt, printReceiptFallback } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 
 export const OrderSummary = () => {
   const { currentOrder, removeItemFromOrder, updateItemQuantity, clearCurrentOrder, calculateTotal, createOrder } = useOrderStore();
@@ -9,6 +10,8 @@ export const OrderSummary = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
+  const [orderSuccess, setOrderSuccess] = useState<boolean | null>(null);
+  const [orderMessage, setOrderMessage] = useState<string | null>(null);
 
   // Only fetch receipt config if it's not already loaded
   useEffect(() => {
@@ -31,6 +34,8 @@ export const OrderSummary = () => {
   const handleCreateOrder = async () => {
     setIsPrinting(true);
     setPrintError(null);
+    setOrderSuccess(null);
+    setOrderMessage(null);
 
     try {
       const phone = phoneNumber.trim() ? phoneNumber : undefined;
@@ -47,6 +52,8 @@ export const OrderSummary = () => {
             await printReceipt(order, config, useSpecificPort);
           }
           // If we get here, printing was successful
+          setOrderSuccess(true);
+          setOrderMessage(`Order #${order.id.substring(0, 8)} was successfully placed and receipt printed.`);
         } catch (error: unknown) {
           // Handle specific print errors
           console.error('Print error:', error);
@@ -74,11 +81,21 @@ export const OrderSummary = () => {
             stack: printError.stack,
             name: printError.name
           });
+
+          // Even if printing failed, the order was still placed successfully
+          setOrderSuccess(true);
+          setOrderMessage(`Order #${order.id.substring(0, 8)} was successfully placed, but there was an issue with printing.`);
         }
+      } else {
+        // Order creation failed
+        setOrderSuccess(false);
+        setOrderMessage('Failed to create order. Please try again.');
       }
     } catch (error) {
       console.error('Error creating order:', error);
       setPrintError('Failed to create order.');
+      setOrderSuccess(false);
+      setOrderMessage('Failed to create order. Please try again.');
     } finally {
       setIsPrinting(false);
       setPhoneNumber('');
@@ -88,6 +105,8 @@ export const OrderSummary = () => {
   const togglePrintingMethod = () => {
     setUseFallbackPrinting(!useFallbackPrinting);
     setPrintError(null);
+    setOrderSuccess(null);
+    setOrderMessage(null);
   };
 
   const total = calculateTotal();
@@ -158,8 +177,23 @@ export const OrderSummary = () => {
           </div>
 
           {printError && (
-            <div className="p-3 mt-4 text-sm text-red-700 bg-red-100 rounded-md">
-              {printError}
+            <div className="p-3 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start">
+              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span>{printError}</span>
+            </div>
+          )}
+
+          {orderSuccess === true && orderMessage && (
+            <div className="p-3 mt-4 text-sm text-green-700 bg-green-100 rounded-md flex items-start">
+              <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span>{orderMessage}</span>
+            </div>
+          )}
+
+          {orderSuccess === false && orderMessage && (
+            <div className="p-3 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start">
+              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
+              <span>{orderMessage}</span>
             </div>
           )}
 

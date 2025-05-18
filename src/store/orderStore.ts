@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { databases, DATABASE_ID, ORDERS_COLLECTION_ID } from '../services/appwrite';
 import { Order, OrderItem, OrderStatus } from '../types/order';
-import { ID, Query } from 'appwrite';
+import { ID, Query, AppwriteException } from 'appwrite';
 
 interface OrderState {
   currentOrder: OrderItem[];
@@ -72,15 +72,23 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     try {
       const total = get().calculateTotal();
 
+      // Format the date as ISO string for Appwrite compatibility
+      const now = new Date();
+
       const orderData = {
         items: currentOrder,
         status: 'Pending' as OrderStatus,
         total,
         phoneNumber,
-        createdAt: new Date(),
+        createdAt: now.toISOString(), // Use ISO string format for Appwrite
         // In a real app, this would be the current user's ID
         createdBy: 'current-user-id',
       };
+
+      // Log the order data being sent to Appwrite
+      console.log('Creating order with data:', orderData);
+      console.log('Using DATABASE_ID:', DATABASE_ID);
+      console.log('Using ORDERS_COLLECTION_ID:', ORDERS_COLLECTION_ID);
 
       try {
         const response = await databases.createDocument(
@@ -89,6 +97,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           ID.unique(),
           orderData
         );
+
+        console.log('Order created successfully in Appwrite:', response);
 
         const newOrder: Order = {
           id: response.$id,
@@ -102,15 +112,43 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
         const orders = [...get().orders, newOrder];
 
-        set({ orders, isLoading: false });
+        set({ orders, isLoading: false, error: null });
         get().clearCurrentOrder();
 
         return newOrder;
-      } catch (dbError) {
-        // Handle database not found or collection not found errors gracefully
-        console.warn('Database or collection not found, cannot create order:', dbError);
+      } catch (dbError: unknown) {
+        // Log detailed error information
+        const appwriteError = dbError as AppwriteException;
+        console.error('Appwrite database error details:', {
+          message: appwriteError.message,
+          code: appwriteError.code,
+          type: appwriteError.type,
+          response: appwriteError.response
+        });
 
-        // Create a local order object with a temporary ID
+        // Check if it's a configuration issue
+        const appwriteDbError = dbError as AppwriteException;
+        if (appwriteDbError.code === 404) {
+          console.error('Database or collection not found. Please check your Appwrite configuration.');
+          set({
+            error: 'Database or collection not found. Please check your Appwrite configuration.',
+            isLoading: false
+          });
+        } else if (appwriteDbError.code === 401 || appwriteDbError.code === 403) {
+          console.error('Authentication or permission error with Appwrite.');
+          set({
+            error: 'Authentication or permission error with Appwrite. Please check your API keys and permissions.',
+            isLoading: false
+          });
+        } else {
+          console.warn('Database error, creating local order:', dbError);
+          set({
+            error: `Database error: ${dbError instanceof Error ? dbError.message : 'Unknown error'}`,
+            isLoading: false
+          });
+        }
+
+        // Create a local order object with a temporary ID as fallback
         const tempOrder: Order = {
           id: 'local-' + Date.now(),
           items: currentOrder,
@@ -118,11 +156,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           total,
           phoneNumber,
           createdBy: 'current-user-id',
-          createdAt: new Date(),
+          createdAt: now,
         };
 
         // Store it locally only
-        set({ isLoading: false });
         get().clearCurrentOrder();
 
         return tempOrder;
