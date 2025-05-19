@@ -75,6 +75,34 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       // Format the date as ISO string for Appwrite compatibility
       const now = new Date();
 
+      // Generate order number based on date and count
+      // Format: DDMMYYYYNN where NN is the order number for the day
+      const day = now.getDate().toString().padStart(2, '0');
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const year = now.getFullYear().toString();
+
+      // Get the count of orders for today to determine the order number
+      let orderCount = 1; // Default to 1 if we can't determine the count
+
+      try {
+        // Try to count orders from today to determine the order number
+        const startOfDay = new Date(now);
+        startOfDay.setHours(0, 0, 0, 0);
+
+        const todayOrders = get().orders.filter(order =>
+          order.createdAt >= startOfDay && order.createdAt <= now
+        );
+
+        // Set the order count to the number of orders today + 1
+        orderCount = todayOrders.length + 1;
+      } catch (error) {
+        console.warn('Could not determine order count for today, using default', error);
+      }
+
+      // Format the order number with padded zeros (e.g., 01, 02, etc.)
+      const orderNumberForDay = orderCount.toString().padStart(2, '0');
+      const formattedOrderNumber = `${day}${month}${year}${orderNumberForDay}`;
+
       // Serialize the items array to JSON string for Appwrite storage
       const orderData = {
         items: JSON.stringify(currentOrder), // Convert array to JSON string for storage
@@ -84,8 +112,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         createdAt: now.toISOString(), // Use ISO string format for Appwrite
         // In a real app, this would be the current user's ID
         createdBy: 'current-user-id',
-        // Add orderNumber field required by Appwrite collection
-        orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
+        // Add orderNumber field with the new format
+        orderNumber: formattedOrderNumber,
       };
 
       // Log the order data being sent to Appwrite
@@ -118,7 +146,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         const orders = [...get().orders, newOrder];
 
         set({ orders, isLoading: false, error: null });
-        get().clearCurrentOrder();
+        // Don't clear the current order here - let the UI component handle this
+        // based on whether the entire operation (including printing) was successful
 
         return newOrder;
       } catch (dbError: unknown) {
@@ -165,8 +194,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
         };
 
-        // Store it locally only
-        get().clearCurrentOrder();
+        // Don't clear the current order here - let the UI component handle this
+        // based on whether the entire operation (including printing) was successful
 
         return tempOrder;
       }

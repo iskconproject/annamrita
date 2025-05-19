@@ -26,7 +26,7 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
       <Text align="center" size={{ width: 2, height: 2 }}>{config.headerText}</Text>
       <Br />
       <Line />
-      <Row left="Order #" right={order.id.substring(0, 8)} />
+      <Row left="Order #" right={order.orderNumber} />
       <Row left="Date" right={formatDate(order.createdAt)} />
       <Row left="Time" right={formatTime(order.createdAt)} />
       {order.phoneNumber && <Row left="Phone" right={order.phoneNumber} />}
@@ -192,7 +192,7 @@ export const generateReceiptContent = (order: Order, config: ReceiptConfig = DEF
   receipt += `${config.headerText}\n\n`;
 
   // Order details
-  receipt += `Order #: ${order.id.substring(0, 8)}\n`;
+  receipt += `Order #: ${order.orderNumber}\n`;
   receipt += `Date: ${formatDate(order.createdAt)}\n`;
   receipt += `Time: ${formatTime(order.createdAt)}\n`;
   if (order.phoneNumber) {
@@ -233,7 +233,7 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Receipt #${order.id.substring(0, 8)}</title>
+        <title>Receipt #${order.orderNumber}</title>
         <style>
           body {
             font-family: 'Courier New', monospace;
@@ -284,7 +284,7 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
         <div class="header">${config.headerText}</div>
 
         <div class="info">
-          <div>Order #: ${order.id.substring(0, 8)}</div>
+          <div>Order #: ${order.orderNumber}</div>
           <div>Date: ${formatDate(order.createdAt)}</div>
           <div>Time: ${formatTime(order.createdAt)}</div>
           ${order.phoneNumber ? `<div>Phone: ${order.phoneNumber}</div>` : ''}

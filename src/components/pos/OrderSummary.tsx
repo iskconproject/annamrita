@@ -53,7 +53,9 @@ export const OrderSummary = () => {
           }
           // If we get here, printing was successful
           setOrderSuccess(true);
-          setOrderMessage(`Order #${order.id.substring(0, 8)} was successfully placed and receipt printed.`);
+          setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+          // Only clear the current order on successful order creation
+          clearCurrentOrder();
         } catch (error: unknown) {
           // Handle specific print errors
           console.error('Print error:', error);
@@ -84,18 +86,37 @@ export const OrderSummary = () => {
 
           // Even if printing failed, the order was still placed successfully
           setOrderSuccess(true);
-          setOrderMessage(`Order #${order.id.substring(0, 8)} was successfully placed, but there was an issue with printing.`);
+          setOrderMessage(`Order #${order.orderNumber} was successfully placed, but there was an issue with printing.`);
+          // Only clear the current order on successful order creation
+          clearCurrentOrder();
         }
       } else {
         // Order creation failed
         setOrderSuccess(false);
         setOrderMessage('Failed to create order. Please try again.');
+        // Do NOT clear the current order when order creation fails
       }
     } catch (error) {
       console.error('Error creating order:', error);
+
+      // Provide more specific error message if possible
+      let errorMessage = 'Failed to create order. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('connection')) {
+          errorMessage = 'Network error: Please check your internet connection and try again.';
+        } else if (error.message.includes('permission') || error.message.includes('access')) {
+          errorMessage = 'Permission error: You may not have access to create orders.';
+        } else if (error.message.includes('database')) {
+          errorMessage = 'Database error: There was an issue saving your order.';
+        } else {
+          errorMessage = `Error: ${error.message}`;
+        }
+      }
+
       setPrintError('Failed to create order.');
       setOrderSuccess(false);
-      setOrderMessage('Failed to create order. Please try again.');
+      setOrderMessage(errorMessage);
+      // Do NOT clear the current order when order creation fails
     } finally {
       setIsPrinting(false);
       setPhoneNumber('');
@@ -176,24 +197,36 @@ export const OrderSummary = () => {
             />
           </div>
 
+          {/* Print Error Message */}
           {printError && (
-            <div className="p-3 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start">
+            <div className="p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start border border-red-300 shadow-sm animate-in fade-in duration-300">
               <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span>{printError}</span>
+              <div>
+                <h4 className="font-semibold mb-1">Printer Error</h4>
+                <span>{printError}</span>
+              </div>
             </div>
           )}
 
+          {/* Success Message */}
           {orderSuccess === true && orderMessage && (
-            <div className="p-3 mt-4 text-sm text-green-700 bg-green-100 rounded-md flex items-start">
+            <div className="p-4 mt-4 text-sm text-green-700 bg-green-100 rounded-md flex items-start border border-green-300 shadow-sm animate-in fade-in duration-300">
               <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span>{orderMessage}</span>
+              <div>
+                <h4 className="font-semibold mb-1">Order Successful</h4>
+                <span>{orderMessage}</span>
+              </div>
             </div>
           )}
 
+          {/* Error Message */}
           {orderSuccess === false && orderMessage && (
-            <div className="p-3 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start">
+            <div className="p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start border border-red-300 shadow-sm animate-in fade-in duration-300">
               <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <span>{orderMessage}</span>
+              <div>
+                <h4 className="font-semibold mb-1">Order Failed</h4>
+                <span>{orderMessage}</span>
+              </div>
             </div>
           )}
 
