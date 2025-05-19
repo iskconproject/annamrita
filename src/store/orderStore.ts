@@ -84,6 +84,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         createdAt: now.toISOString(), // Use ISO string format for Appwrite
         // In a real app, this would be the current user's ID
         createdBy: 'current-user-id',
+        // Add orderNumber field required by Appwrite collection
+        orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
       };
 
       // Log the order data being sent to Appwrite
@@ -110,6 +112,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           phoneNumber: response.phoneNumber,
           createdBy: response.createdBy,
           createdAt: new Date(response.createdAt),
+          orderNumber: response.orderNumber,
         };
 
         const orders = [...get().orders, newOrder];
@@ -159,6 +162,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           phoneNumber,
           createdBy: 'current-user-id',
           createdAt: now,
+          orderNumber: `ORD-${Date.now().toString().slice(-6)}`,
         };
 
         // Store it locally only
@@ -200,6 +204,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           phoneNumber: doc.phoneNumber,
           createdBy: doc.createdBy,
           createdAt: new Date(doc.createdAt),
+          orderNumber: doc.orderNumber || `ORD-${doc.$id.substring(0, 6)}`, // Fallback if orderNumber is missing
         })) as Order[];
 
         set({ orders, isLoading: false });

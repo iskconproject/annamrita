@@ -16,4 +16,5 @@ export interface Order {
   phoneNumber?: string;
   createdBy: string;
   createdAt: Date;
+  orderNumber: string;
 }
