@@ -75,8 +75,9 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       // Format the date as ISO string for Appwrite compatibility
       const now = new Date();
 
+      // Serialize the items array to JSON string for Appwrite storage
       const orderData = {
-        items: currentOrder,
+        items: JSON.stringify(currentOrder), // Convert array to JSON string for storage
         status: 'Pending' as OrderStatus,
         total,
         phoneNumber,
@@ -100,9 +101,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
         console.log('Order created successfully in Appwrite:', response);
 
+        // Parse the items JSON string back to an array
         const newOrder: Order = {
           id: response.$id,
-          items: response.items,
+          items: JSON.parse(response.items), // Parse the JSON string back to an array
           status: response.status,
           total: response.total,
           phoneNumber: response.phoneNumber,
@@ -192,7 +194,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
         const orders = response.documents.map(doc => ({
           id: doc.$id,
-          items: doc.items,
+          items: doc.items ? JSON.parse(doc.items) : [], // Parse the JSON string back to an array
           status: doc.status,
           total: doc.total,
           phoneNumber: doc.phoneNumber,
