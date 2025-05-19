@@ -32,7 +32,7 @@ import {
 
 export const DashboardPage = () => {
   const { user } = useAuthStore();
-  const { items } = useMenuStore();
+  const { items, fetchMenuItems } = useMenuStore();
   const { orders, fetchOrders } = useOrderStore();
   const [todayOrders, setTodayOrders] = useState(0);
   const [todaySales, setTodaySales] = useState(0);
@@ -42,6 +42,13 @@ export const DashboardPage = () => {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  useEffect(() => {
+    // Fetch menu items if they haven't been loaded yet
+    if (items.length === 0) {
+      fetchMenuItems();
+    }
+  }, [items.length, fetchMenuItems]);
 
   useEffect(() => {
     // Calculate today's orders and sales
