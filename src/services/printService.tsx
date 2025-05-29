@@ -1,6 +1,7 @@
 import { Order } from '../types/order';
 import { ReceiptConfig, DEFAULT_RECEIPT_CONFIG, PRINT_WIDTH_CONFIGS } from '../types/receipt';
 import { Printer, Text, Line, Row, Br, Cut, render } from 'react-thermal-printer';
+import { detectAllPrinters, THERMAL_PRINTER_VENDORS } from '../utils/printerUtils';
 
 // Function to format date for receipt
 const formatDate = (date: Date): string => {
@@ -52,6 +53,114 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
       <Cut />
     </Printer>
   );
+};
+
+// Function to print receipt using WebUSB API
+export const printReceiptUSB = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
+  try {
+    // Check if WebUSB API is supported
+    if (!navigator.usb) {
+      console.error('WebUSB API is not supported in this browser');
+      throw new Error('WebUSB API is not supported in this browser. Please use Chrome or Edge.');
+    }
+
+    // Generate receipt data using react-thermal-printer's render function
+    const receiptJSX = generateReceiptJSX(order, config);
+    const data = await render(receiptJSX);
+
+    console.log('Receipt data generated, attempting to connect to USB printer...');
+
+    // Get available USB devices
+    const devices = await navigator.usb.getDevices();
+
+    // Find a thermal printer device
+    const printerDevice = devices.find(device =>
+      THERMAL_PRINTER_VENDORS.some(vendor => vendor.vendorId === device.vendorId)
+    );
+
+    let device = printerDevice;
+
+    if (!device) {
+      // If no authorized device found, request one
+      console.log('No authorized USB printer found, requesting device...');
+      try {
+        device = await navigator.usb.requestDevice({
+          filters: THERMAL_PRINTER_VENDORS.map(vendor => ({ vendorId: vendor.vendorId }))
+        });
+      } catch (err) {
+        console.error('Error selecting USB device:', err);
+        throw new Error('No USB printer selected. Please make sure your printer is connected and try again.');
+      }
+    }
+
+    console.log('USB device selected, attempting to open...');
+
+    try {
+      // Open the device if not already open
+      if (!device.opened) {
+        await device.open();
+      }
+
+      // Select configuration (usually configuration 1)
+      if (device.configuration === null) {
+        await device.selectConfiguration(1);
+      }
+
+      // Claim the interface (usually interface 0 for printers)
+      await device.claimInterface(0);
+
+      console.log('USB device opened and interface claimed');
+    } catch (error) {
+      console.error('Error opening USB device:', error);
+      throw new Error(
+        'Failed to open connection to the USB printer. This could be because:\n' +
+        '1. Another application is using the printer\n' +
+        '2. The printer is not powered on\n' +
+        '3. The printer is not properly connected\n\n' +
+        'Try closing other applications, check if the printer is on, ' +
+        'and make sure it\'s properly connected via USB.'
+      );
+    }
+
+    try {
+      console.log('Writing data to USB printer...');
+
+      // Find the output endpoint (usually endpoint 1 or 2)
+      const config = device.configuration;
+      const interface_ = config?.interfaces[0];
+      const alternate = interface_?.alternates[0];
+      const endpoint = alternate?.endpoints.find(ep => ep.direction === 'out');
+
+      if (!endpoint) {
+        throw new Error('Could not find output endpoint for USB printer');
+      }
+
+      // Write the data to the printer
+      const result = await device.transferOut(endpoint.endpointNumber, data);
+
+      if (result.status !== 'ok') {
+        throw new Error(`USB transfer failed with status: ${result.status}`);
+      }
+
+      console.log(`Data successfully sent to USB printer (${result.bytesWritten} bytes)`);
+    } catch (error) {
+      console.error('Error writing to USB printer:', error);
+      throw new Error('Failed to send data to the USB printer. Please check the printer connection and try again.');
+    } finally {
+      // Always close the device when done
+      try {
+        await device.close();
+        console.log('USB device closed');
+      } catch (closeError) {
+        console.warn('Error closing USB device:', closeError);
+      }
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error printing receipt via USB:', error);
+    throw error;
+  }
 };
 
 // Function to print receipt using Web Serial API
@@ -340,5 +449,53 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
   } catch (error) {
     console.error('Error printing receipt with fallback method:', error);
     throw error;
+  }
+};
+
+// Enhanced print function that automatically detects and uses the best available printer
+export const printReceiptAuto = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
+  try {
+    console.log('Auto-detecting best printer for receipt printing...');
+
+    // First, try to detect available printers
+    const printers = await detectAllPrinters();
+
+    if (printers.length === 0) {
+      console.log('No printers detected, falling back to browser print dialog');
+      return await printReceiptFallback(order, config);
+    }
+
+    // Prioritize USB printers over Serial printers (generally more reliable)
+    const usbPrinters = printers.filter(p => p.type === 'usb');
+    const serialPrinters = printers.filter(p => p.type === 'serial');
+
+    // Try USB printers first
+    if (usbPrinters.length > 0) {
+      console.log(`Found ${usbPrinters.length} USB printer(s), attempting USB printing...`);
+      try {
+        return await printReceiptUSB(order, config);
+      } catch (usbError) {
+        console.warn('USB printing failed, trying serial printing...', usbError);
+      }
+    }
+
+    // Try Serial printers if USB failed or not available
+    if (serialPrinters.length > 0) {
+      console.log(`Found ${serialPrinters.length} serial printer(s), attempting serial printing...`);
+      try {
+        return await printReceipt(order, config);
+      } catch (serialError) {
+        console.warn('Serial printing failed, falling back to browser print...', serialError);
+      }
+    }
+
+    // If all else fails, use browser print dialog
+    console.log('All printer methods failed, using browser print dialog as fallback');
+    return await printReceiptFallback(order, config);
+
+  } catch (error) {
+    console.error('Error in auto print function:', error);
+    // Final fallback to browser print
+    return await printReceiptFallback(order, config);
   }
 };
