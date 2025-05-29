@@ -1,5 +1,5 @@
 import { Order } from '../types/order';
-import { ReceiptConfig, DEFAULT_RECEIPT_CONFIG } from '../types/receipt';
+import { ReceiptConfig, DEFAULT_RECEIPT_CONFIG, PRINT_WIDTH_CONFIGS } from '../types/receipt';
 import { Printer, Text, Line, Row, Br, Cut, render } from 'react-thermal-printer';
 
 // Function to format date for receipt
@@ -21,8 +21,10 @@ const formatTime = (date: Date): string => {
 
 // Function to generate receipt JSX
 export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG) => {
+  const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
+
   return (
-    <Printer type="epson" width={32}>
+    <Printer type="epson" width={printWidthConfig.thermalWidth}>
       <Text align="center" size={{ width: 2, height: 2 }}>{config.headerText}</Text>
       <Br />
       <Line />
@@ -222,6 +224,8 @@ export const generateReceiptContent = (order: Order, config: ReceiptConfig = DEF
 // Fallback function to print receipt using browser's print dialog
 export const printReceiptFallback = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
   try {
+    const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
+
     // Create a new window for printing
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -238,7 +242,7 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           body {
             font-family: 'Courier New', monospace;
             font-size: 12px;
-            width: 220px; /* Adjusted for 48mm printer */
+            width: ${printWidthConfig.cssWidth};
             margin: 0 auto;
             padding: 8px;
           }
@@ -271,10 +275,10 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           @media print {
             body {
               width: 100%;
-              max-width: 220px; /* Adjusted for 48mm printer */
+              max-width: ${printWidthConfig.cssWidth};
             }
             @page {
-              size: 58mm 297mm; /* 58mm thermal receipt size (48mm printable) */
+              size: ${printWidthConfig.pageSize};
               margin: 0;
             }
           }

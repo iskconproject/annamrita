@@ -40,6 +40,7 @@ export const useReceiptConfigStore = create<ReceiptConfigState>((set, get) => ({
             footerText: doc.footerText,
             showQRCode: doc.showQRCode,
             qrCodeData: doc.qrCodeData,
+            printWidth: doc.printWidth || '58mm',
             createdAt: new Date(doc.createdAt),
             updatedAt: new Date(doc.updatedAt),
           };

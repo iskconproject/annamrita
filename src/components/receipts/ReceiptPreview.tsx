@@ -1,4 +1,4 @@
-import { ReceiptConfig } from '../../types/receipt';
+import { ReceiptConfig, PRINT_WIDTH_CONFIGS } from '../../types/receipt';
 import { Card, CardContent } from '../../components/ui/card';
 import { Order } from '../../types/order';
 
@@ -7,9 +7,12 @@ interface ReceiptPreviewProps {
 }
 
 export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
+  const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
+
   // Create a sample order for preview
   const sampleOrder: Order = {
     id: 'sample-123456789',
+    orderNumber: '2905202501',
     items: [
       {
         itemId: 'item1',
@@ -63,11 +66,13 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
         <div className="bg-white rounded-lg overflow-hidden">
           <div className="p-4 border-b border-gray-200 bg-gray-50">
             <h3 className="text-lg font-medium text-gray-900">Receipt Preview</h3>
-            <p className="text-sm text-gray-500">This is how your receipt will look</p>
+            <p className="text-sm text-gray-500">
+              This is how your receipt will look ({config.printWidth || '58mm'} width)
+            </p>
           </div>
 
           {/* Receipt preview */}
-          <div className="p-4 font-mono text-sm bg-white" style={{ maxWidth: '250px', margin: '0 auto' }}>
+          <div className="p-4 font-mono text-sm bg-white" style={{ maxWidth: printWidthConfig.cssWidth, margin: '0 auto' }}>
             <div className="receipt-preview" style={{
               border: '1px dashed #ccc',
               padding: '0.75rem',
@@ -77,7 +82,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
               lineHeight: '1.2',
               whiteSpace: 'pre-wrap',
               width: '100%',
-              maxWidth: '220px', /* Adjusted to match 48mm thermal printer width */
+              maxWidth: printWidthConfig.cssWidth,
               margin: '0 auto'
             }}>
               {/* Header */}

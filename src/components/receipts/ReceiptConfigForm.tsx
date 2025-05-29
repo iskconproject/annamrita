@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ReceiptConfig } from '../../types/receipt';
+import { ReceiptConfig, PrintWidth } from '../../types/receipt';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Switch } from '../../components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 
 interface ReceiptConfigFormProps {
   config: ReceiptConfig;
@@ -43,6 +44,19 @@ export const ReceiptConfigForm = ({ config, onSubmit, isLoading, onFormChange }:
     const updatedFormData = {
       ...formData,
       [name]: checked,
+    };
+    setFormData(updatedFormData);
+
+    // Notify parent component of form changes for real-time preview
+    if (onFormChange) {
+      onFormChange(updatedFormData);
+    }
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    const updatedFormData = {
+      ...formData,
+      [name]: value,
     };
     setFormData(updatedFormData);
 
@@ -92,6 +106,24 @@ export const ReceiptConfigForm = ({ config, onSubmit, isLoading, onFormChange }:
               </p>
             </div>
 
+            <div className="grid gap-2">
+              <Label htmlFor="printWidth">Print Width</Label>
+              <Select
+                value={formData.printWidth || '58mm'}
+                onValueChange={(value) => handleSelectChange('printWidth', value as PrintWidth)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select print width" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="58mm">58mm (2 inch) - Standard</SelectItem>
+                  <SelectItem value="80mm">80mm (3 inch) - Wide</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Choose the width of your thermal printer paper
+              </p>
+            </div>
 
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
