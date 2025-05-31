@@ -86,7 +86,13 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
               margin: '0 auto'
             }}>
               {/* Header */}
-              <div className="text-center font-bold" style={{ fontSize: '1rem' }}>
+              <div className="text-center font-bold" style={{
+                fontSize: '0.85rem',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                hyphens: 'auto',
+                lineHeight: '1.3'
+              }}>
                 {config.headerText}
               </div>
 

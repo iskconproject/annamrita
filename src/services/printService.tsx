@@ -26,7 +26,7 @@ export const generateReceiptJSX = (order: Order, config: ReceiptConfig = DEFAULT
 
   return (
     <Printer type="epson" width={printWidthConfig.thermalWidth}>
-      <Text align="center" size={{ width: 2, height: 2 }}>{config.headerText}</Text>
+      <Text align="center" size={{ width: 1, height: 1 }}>{config.headerText}</Text>
       <Br />
       <Line />
       <Row left="Order #" right={order.orderNumber} />
@@ -357,9 +357,13 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
           }
           .header {
             text-align: center;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             margin-bottom: 10px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            line-height: 1.3;
           }
           .info {
             margin-bottom: 10px;
