@@ -339,52 +339,119 @@ export const PrinterDiagnostics = ({ initialOpen = false }: PrinterDiagnosticsPr
           </div>
         )}
 
-        <div className="text-xs text-gray-600">
-          <p className="font-medium">Troubleshooting tips:</p>
+        <div className="space-y-4">
+          <h4 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+            <span className="text-iskcon-primary">💡</span>
+            Troubleshooting Guide
+          </h4>
 
-          <p className="mt-2 font-medium text-blue-600">USB Thermal Printers:</p>
-          <ul className="list-disc pl-5 mt-1 space-y-1">
-            <li>Make sure your USB thermal printer is connected and powered on</li>
-            <li>Use Chrome or Edge browser (WebUSB API is not supported in all browsers)</li>
-            <li>Click "Add USB Printer" to select your printer from the device list</li>
-            <li>Supported brands: Epson, Star Micronics, SNBC, and others</li>
-            <li>If your printer doesn't appear, try a different USB port or cable</li>
-          </ul>
+          {/* USB Thermal Printers Section */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-blue-600">🔌</span>
+              <h5 className="text-sm font-medium text-blue-700">USB Thermal Printers</h5>
+            </div>
+            <div className="space-y-2">
+              {[
+                "Make sure your USB thermal printer is connected and powered on",
+                "Use Chrome or Edge browser (WebUSB API is not supported in all browsers)",
+                "Click \"Add USB Printer\" to select your printer from the device list",
+                "Supported brands: Epson, Star Micronics, SNBC, and others",
+                "If your printer doesn't appear, try a different USB port or cable"
+              ].map((tip, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs text-blue-700">
+                  <span className="text-blue-400 mt-0.5">•</span>
+                  <span>{tip}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p className="mt-2 font-medium text-green-600">Serial/COM Port Printers:</p>
-          <ul className="list-disc pl-5 mt-1 space-y-1">
-            <li>Make sure your printer is connected and powered on</li>
-            <li>Use Chrome or Edge browser (Web Serial API is not supported in all browsers)</li>
-            <li>Click "Add Serial Printer" to choose your printer's COM port</li>
-            <li>Check Device Manager to confirm the COM port number (e.g., COM1, COM3)</li>
-            <li>Try different baud rates (common rates: 9600, 19200, 38400, 57600, 115200)</li>
-          </ul>
+          {/* Serial/COM Port Printers Section */}
+          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-green-600">📡</span>
+              <h5 className="text-sm font-medium text-green-700">Serial/COM Port Printers</h5>
+            </div>
+            <div className="space-y-2">
+              {[
+                "Make sure your printer is connected and powered on",
+                "Use Chrome or Edge browser (Web Serial API is not supported in all browsers)",
+                "Click \"Add Serial Printer\" to choose your printer's COM port",
+                "Check Device Manager to confirm the COM port number (e.g., COM1, COM3)",
+                "Try different baud rates (common rates: 9600, 19200, 38400, 57600, 115200)"
+              ].map((tip, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs text-green-700">
+                  <span className="text-green-400 mt-0.5">•</span>
+                  <span>{tip}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p className="mt-2 font-medium">If you see connection errors:</p>
-          <ul className="list-disc pl-5 mt-1 space-y-1">
-            <li>Close any other applications that might be using the printer</li>
-            <li>Disconnect and reconnect the printer</li>
-            <li>Restart your browser</li>
-            <li>Make sure the printer driver is installed correctly (for Serial printers)</li>
-            <li>For USB printers, try a different USB port or cable</li>
-          </ul>
+          {/* Connection Errors Section */}
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-red-600">⚠️</span>
+              <h5 className="text-sm font-medium text-red-700">Connection Errors</h5>
+            </div>
+            <div className="space-y-2">
+              {[
+                "Close any other applications that might be using the printer",
+                "Disconnect and reconnect the printer",
+                "Restart your browser",
+                "Make sure the printer driver is installed correctly (for Serial printers)",
+                "For USB printers, try a different USB port or cable"
+              ].map((tip, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs text-red-700">
+                  <span className="text-red-400 mt-0.5">•</span>
+                  <span>{tip}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <p className="mt-2 font-medium">General tips:</p>
-          <ul className="list-disc pl-5 mt-1 space-y-1">
-            <li>Check browser console (F12) for detailed error logs</li>
-            <li>Try refreshing the page after reconnecting the printer</li>
-            <li>USB printers are generally more reliable than Serial/COM port connections</li>
-            <li>If your printer shows as "USB001" in Windows, it should appear as a COM port</li>
-            <li>Some printers require specific initialization commands</li>
-          </ul>
+          {/* General Tips Section */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-gray-600">ℹ️</span>
+              <h5 className="text-sm font-medium text-gray-700">General Tips</h5>
+            </div>
+            <div className="space-y-2">
+              {[
+                "Check browser console (F12) for detailed error logs",
+                "Try refreshing the page after reconnecting the printer",
+                "USB printers are generally more reliable than Serial/COM port connections",
+                "If your printer shows as \"USB001\" in Windows, it should appear as a COM port",
+                "Some printers require specific initialization commands"
+              ].map((tip, index) => (
+                <div key={index} className="flex items-start gap-2 text-xs text-gray-700">
+                  <span className="text-gray-400 mt-0.5">•</span>
+                  <span>{tip}</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <div className="mt-3 p-2 bg-iskcon-light border border-iskcon-primary/20 rounded-md">
-            <p className="font-medium text-iskcon-primary">Need to reset permissions?</p>
-            <p className="mt-1">
-              <strong>USB:</strong> In Chrome, go to chrome://settings/content/usbDevices<br />
-              <strong>Serial:</strong> In Chrome, go to chrome://settings/content/serialPorts<br />
-              You can remove previously granted permissions and try again.
-            </p>
+          {/* Reset Permissions Section */}
+          <div className="bg-iskcon-light border border-iskcon-primary/30 rounded-lg p-3">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-iskcon-primary">🔄</span>
+              <h5 className="text-sm font-medium text-iskcon-primary">Reset Permissions</h5>
+            </div>
+            <div className="space-y-2 text-xs text-iskcon-dark">
+              <div className="flex items-start gap-2">
+                <span className="font-medium text-iskcon-primary">USB:</span>
+                <span>In Chrome, go to chrome://settings/content/usbDevices</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-medium text-iskcon-primary">Serial:</span>
+                <span>In Chrome, go to chrome://settings/content/serialPorts</span>
+              </div>
+              <p className="text-xs text-gray-600 mt-2">
+                You can remove previously granted permissions and try again.
+              </p>
+            </div>
           </div>
         </div>
       </div>
