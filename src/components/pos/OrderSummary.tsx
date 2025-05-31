@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
-import { printReceipt, printReceiptFallback } from '../../services/printService.tsx';
+import { printReceipt, printReceiptFallback, printReceiptAuto } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -29,7 +29,7 @@ export const OrderSummary = () => {
   };
 
   const [useFallbackPrinting, setUseFallbackPrinting] = useState(false);
-  const [useSpecificPort, setUseSpecificPort] = useState(true); // Default to using USB001 port
+  const [useAutoDetection, setUseAutoDetection] = useState(true); // Default to auto-detection
 
   const handleCreateOrder = async () => {
     setIsPrinting(true);
@@ -46,10 +46,13 @@ export const OrderSummary = () => {
           if (useFallbackPrinting) {
             // Use browser print dialog method if fallback is enabled
             await printReceiptFallback(order, config);
+          } else if (useAutoDetection) {
+            // Use auto-detection to find the best available printer
+            console.log('Using auto-detection to find the best printer...');
+            await printReceiptAuto(order, config);
           } else {
-            // Try to print the receipt with direct connection
-            // Pass the useSpecificPort flag to target USB001 port
-            await printReceipt(order, config, useSpecificPort);
+            // Use manual Web Serial API method
+            await printReceipt(order, config, false);
           }
           // If we get here, printing was successful
           setOrderSuccess(true);
@@ -63,18 +66,36 @@ export const OrderSummary = () => {
           // Cast to Error if possible for type safety
           const printError = error instanceof Error ? error : new Error(String(error));
 
-          // If this is a WebUSB error and we haven't tried fallback yet, suggest it
-          if (!useFallbackPrinting &&
-            (printError.name === 'SecurityError' ||
-              printError.message?.includes('Access denied') ||
-              printError.message?.includes('No compatible printer'))) {
-            setPrintError(
-              'Failed to print using direct printer connection. ' +
-              'Would you like to try printing using the browser print dialog instead? ' +
-              'Click "Use Browser Printing" below.'
-            );
+          // Provide specific error messages based on the error type
+          if (!useFallbackPrinting) {
+            if (printError.name === 'SecurityError' || printError.message?.includes('Access denied')) {
+              setPrintError(
+                'Printer access denied. Please ensure your USB printer is connected and you have granted permission to access it. ' +
+                'Try clicking "Use Browser Printing" below as an alternative.'
+              );
+            } else if (printError.message?.includes('No compatible printer') || printError.message?.includes('No USB thermal printer found')) {
+              setPrintError(
+                'No compatible USB printer found. Please check that your thermal printer is connected via USB and powered on. ' +
+                'You can also try "Use Browser Printing" below.'
+              );
+            } else if (printError.message?.includes('No printer port selected') || printError.message?.includes('No ports available')) {
+              setPrintError(
+                'No printer port available. Please ensure your printer is connected and try again. ' +
+                'You can also use "Use Browser Printing" below.'
+              );
+            } else if (printError.message?.includes('Failed to open connection')) {
+              setPrintError(
+                'Could not connect to printer. The printer may be in use by another application or not powered on. ' +
+                'Try closing other applications and ensure the printer is ready.'
+              );
+            } else {
+              setPrintError(
+                `Printer error: ${printError.message || 'Unknown error occurred'}. ` +
+                'Try using "Use Browser Printing" below as an alternative.'
+              );
+            }
           } else {
-            setPrintError(printError.message || 'Failed to print receipt. Please check printer connection.');
+            setPrintError(printError.message || 'Failed to print receipt using browser print dialog.');
           }
 
           // Show detailed error in console for debugging
@@ -125,6 +146,13 @@ export const OrderSummary = () => {
 
   const togglePrintingMethod = () => {
     setUseFallbackPrinting(!useFallbackPrinting);
+    setPrintError(null);
+    setOrderSuccess(null);
+    setOrderMessage(null);
+  };
+
+  const toggleAutoDetection = () => {
+    setUseAutoDetection(!useAutoDetection);
     setPrintError(null);
     setOrderSuccess(null);
     setOrderMessage(null);
@@ -251,15 +279,15 @@ export const OrderSummary = () => {
             {!useFallbackPrinting && (
               <div className="flex items-center">
                 <button
-                  onClick={() => setUseSpecificPort(!useSpecificPort)}
+                  onClick={toggleAutoDetection}
                   type="button"
                   className="text-xs text-iskcon-primary hover:text-iskcon-dark flex items-center"
                 >
-                  <span className={`mr-2 ${useSpecificPort ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
-                  {useSpecificPort ? 'Using USB001 Port' : 'Use USB001 Port'}
+                  <span className={`mr-2 ${useAutoDetection ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+                  {useAutoDetection ? 'Auto-Detect Printer' : 'Manual Serial Mode'}
                 </button>
                 <span className="ml-2 text-xs text-gray-500">
-                  (Direct connection to printer)
+                  {useAutoDetection ? '(USB/Serial auto-detection)' : '(Web Serial API only)'}
                 </span>
               </div>
             )}

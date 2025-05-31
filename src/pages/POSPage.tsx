@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Layout } from '../components/layout/Layout';
 import { MenuItemCard } from '../components/pos/MenuItemCard';
 import { OrderSummary } from '../components/pos/OrderSummary';
+import { PrinterDebugger } from '../components/pos/PrinterDebugger';
 import { useMenuStore } from '../store/menuStore';
 import { cn } from '@/lib/utils';
 
 export const POSPage = () => {
   const { items, categories, fetchMenuItems, isLoading } = useMenuStore();
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
+  const [showDebugger, setShowDebugger] = useState(false);
 
   useEffect(() => {
     // Only fetch if we don't already have items
@@ -29,10 +31,22 @@ export const POSPage = () => {
       <div className="p-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <h1 className="text-2xl font-semibold text-gray-900">Point of Sale</h1>
-          <div className="mt-4 md:mt-0">
-            {/* Any additional header actions can go here */}
+          <div className="mt-4 md:mt-0 flex gap-2">
+            <button
+              onClick={() => setShowDebugger(!showDebugger)}
+              className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+            >
+              {showDebugger ? 'Hide' : 'Show'} Printer Debug
+            </button>
           </div>
         </div>
+
+        {/* Printer Debugger */}
+        {showDebugger && (
+          <div className="mb-6">
+            <PrinterDebugger />
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Menu Section */}

@@ -455,47 +455,68 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
 // Enhanced print function that automatically detects and uses the best available printer
 export const printReceiptAuto = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
   try {
-    console.log('Auto-detecting best printer for receipt printing...');
+    console.log('🖨️ Auto-detecting best printer for receipt printing...');
 
     // First, try to detect available printers
     const printers = await detectAllPrinters();
+    console.log(`🔍 Detected ${printers.length} printer(s):`, printers.map(p => `${p.name} (${p.type})`));
 
     if (printers.length === 0) {
-      console.log('No printers detected, falling back to browser print dialog');
-      return await printReceiptFallback(order, config);
+      console.log('❌ No printers detected, falling back to browser print dialog');
+      throw new Error('No compatible printers found. Please ensure your thermal printer is connected and powered on.');
     }
 
     // Prioritize USB printers over Serial printers (generally more reliable)
     const usbPrinters = printers.filter(p => p.type === 'usb');
     const serialPrinters = printers.filter(p => p.type === 'serial');
 
+    console.log(`📊 Printer breakdown: ${usbPrinters.length} USB, ${serialPrinters.length} Serial`);
+
+    let lastError: Error | null = null;
+
     // Try USB printers first
     if (usbPrinters.length > 0) {
-      console.log(`Found ${usbPrinters.length} USB printer(s), attempting USB printing...`);
-      try {
-        return await printReceiptUSB(order, config);
-      } catch (usbError) {
-        console.warn('USB printing failed, trying serial printing...', usbError);
+      console.log(`🔌 Found ${usbPrinters.length} USB printer(s), attempting USB printing...`);
+      for (const printer of usbPrinters) {
+        console.log(`🖨️ Trying USB printer: ${printer.name}`);
+        try {
+          const result = await printReceiptUSB(order, config);
+          console.log('✅ USB printing successful!');
+          return result;
+        } catch (usbError) {
+          lastError = usbError instanceof Error ? usbError : new Error(String(usbError));
+          console.warn(`❌ USB printer ${printer.name} failed:`, lastError.message);
+        }
       }
     }
 
     // Try Serial printers if USB failed or not available
     if (serialPrinters.length > 0) {
-      console.log(`Found ${serialPrinters.length} serial printer(s), attempting serial printing...`);
-      try {
-        return await printReceipt(order, config);
-      } catch (serialError) {
-        console.warn('Serial printing failed, falling back to browser print...', serialError);
+      console.log(`📡 Found ${serialPrinters.length} serial printer(s), attempting serial printing...`);
+      for (const printer of serialPrinters) {
+        console.log(`🖨️ Trying Serial printer: ${printer.name}`);
+        try {
+          const result = await printReceipt(order, config, false);
+          console.log('✅ Serial printing successful!');
+          return result;
+        } catch (serialError) {
+          lastError = serialError instanceof Error ? serialError : new Error(String(serialError));
+          console.warn(`❌ Serial printer ${printer.name} failed:`, lastError.message);
+        }
       }
     }
 
-    // If all else fails, use browser print dialog
-    console.log('All printer methods failed, using browser print dialog as fallback');
-    return await printReceiptFallback(order, config);
+    // If all direct printing methods failed, throw the last error
+    console.log('❌ All direct printer methods failed');
+    if (lastError) {
+      throw lastError;
+    } else {
+      throw new Error('All available printers failed to print the receipt.');
+    }
 
   } catch (error) {
-    console.error('Error in auto print function:', error);
-    // Final fallback to browser print
-    return await printReceiptFallback(order, config);
+    console.error('💥 Error in auto print function:', error);
+    // Re-throw the error so the calling function can handle it appropriately
+    throw error;
   }
 };
