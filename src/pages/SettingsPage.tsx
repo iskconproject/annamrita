@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { useReceiptConfigStore } from '@/store/receiptConfigStore';
 import { useMenuStore } from '@/store/menuStore';
-import { useAuthStore } from '@/store/authStore';
+
 import { ReceiptConfigForm } from '@/components/receipts/ReceiptConfigForm';
 import { ReceiptPreview } from '@/components/receipts/ReceiptPreview';
 import { MenuItemDialog } from '@/components/menu/MenuItemDialog';
@@ -29,11 +29,8 @@ export const SettingsPage = () => {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Users state
-  const { users, fetchUsers } = useAuthStore();
-
   // Active section state
-  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'users' | 'categories' | 'printer'>('receipt');
+  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'categories' | 'printer'>('receipt');
 
   // Loading state for the entire settings page
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -102,19 +99,7 @@ export const SettingsPage = () => {
           console.error('Error fetching categories:', categoriesError);
         }
 
-        try {
-          // Only fetch users if not already loaded
-          if (users.length === 0) {
-            setDebugInfo(prev => [...prev, 'Fetching users...']);
-            await fetchUsers();
-            setDebugInfo(prev => [...prev, 'Users fetched successfully']);
-          } else {
-            setDebugInfo(prev => [...prev, 'Users already loaded']);
-          }
-        } catch (usersError) {
-          setDebugInfo(prev => [...prev, `Error fetching users: ${usersError}`]);
-          console.error('Error fetching users:', usersError);
-        }
+
       } catch (error) {
         console.error('Error loading settings data:', error);
         setDebugInfo(prev => [...prev, `General error: ${error}`]);
@@ -129,7 +114,7 @@ export const SettingsPage = () => {
     loadData();
 
     // Empty dependency array ensures this only runs once when the component mounts
-  }, [config, categories, items, users, fetchConfig, fetchCategories, fetchMenuItems, fetchUsers]);
+  }, [config, categories, items, fetchConfig, fetchCategories, fetchMenuItems]);
 
   // Update preview config when store config changes
   useEffect(() => {
@@ -193,13 +178,6 @@ export const SettingsPage = () => {
                 className={activeSection === 'menu' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
               >
                 Menu
-              </Button>
-              <Button
-                variant={activeSection === 'users' ? 'default' : 'outline'}
-                onClick={() => setActiveSection('users')}
-                className={activeSection === 'users' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
-              >
-                Users
               </Button>
               <Button
                 variant={activeSection === 'categories' ? 'default' : 'outline'}
@@ -382,27 +360,6 @@ export const SettingsPage = () => {
                           setEditingItem(null);
                         }}
                       />
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {activeSection === 'users' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>
-                      Manage users and their access permissions
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <p className="text-center py-4">User management is available at the Users page.</p>
-                      <div className="flex justify-center">
-                        <a href="/users" className="px-4 py-2 bg-iskcon-primary text-white rounded-md hover:bg-iskcon-primary/90">
-                          Go to Users Page
-                        </a>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>

@@ -21,8 +21,6 @@ export const Sidebar = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const isAdmin = user?.role === 'admin';
-
   const navItems = [
     {
       name: 'Dashboard',
@@ -46,6 +44,12 @@ export const Sidebar = () => {
       name: 'Reports',
       path: '/reports',
       icon: <BarChart2 className="w-5 h-5" />,
+      showFor: ['admin']
+    },
+    {
+      name: 'Users',
+      path: '/users',
+      icon: <Users className="w-5 h-5" />,
       showFor: ['admin']
     },
     {
