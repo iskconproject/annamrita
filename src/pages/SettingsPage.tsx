@@ -35,7 +35,6 @@ export const SettingsPage = () => {
   // Loading state for the entire settings page
   const [isPageLoading, setIsPageLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   // Fetch data when component mounts - but only once
   useEffect(() => {
@@ -49,34 +48,23 @@ export const SettingsPage = () => {
 
       try {
         setNetworkError(false);
-        setDebugInfo([]);
 
         // Load each resource individually to better diagnose issues
         try {
           // Only fetch receipt config if not already loaded
           if (!config || !config.id) {
-            setDebugInfo(prev => [...prev, 'Fetching receipt config...']);
             await fetchConfig();
-            setDebugInfo(prev => [...prev, 'Receipt config fetched successfully']);
-          } else {
-            setDebugInfo(prev => [...prev, 'Receipt config already loaded']);
           }
         } catch (configError) {
-          setDebugInfo(prev => [...prev, `Error fetching receipt config: ${configError}`]);
           console.error('Error fetching receipt config:', configError);
         }
 
         try {
           // Only fetch menu items if not already loaded
           if (items.length === 0) {
-            setDebugInfo(prev => [...prev, 'Fetching menu items...']);
             await fetchMenuItems();
-            setDebugInfo(prev => [...prev, 'Menu items fetched successfully']);
-          } else {
-            setDebugInfo(prev => [...prev, 'Menu items already loaded']);
           }
         } catch (menuError) {
-          setDebugInfo(prev => [...prev, `Error fetching menu items: ${menuError}`]);
           console.error('Error fetching menu items:', menuError);
         }
 
@@ -88,21 +76,15 @@ export const SettingsPage = () => {
             categories[0].id.startsWith('local-');
 
           if (needToFetchCategories) {
-            setDebugInfo(prev => [...prev, 'Fetching categories...']);
             await fetchCategories();
-            setDebugInfo(prev => [...prev, 'Categories fetched successfully']);
-          } else {
-            setDebugInfo(prev => [...prev, 'Categories already loaded']);
           }
         } catch (categoriesError) {
-          setDebugInfo(prev => [...prev, `Error fetching categories: ${categoriesError}`]);
           console.error('Error fetching categories:', categoriesError);
         }
 
 
       } catch (error) {
         console.error('Error loading settings data:', error);
-        setDebugInfo(prev => [...prev, `General error: ${error}`]);
         if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
           setNetworkError(true);
         }
@@ -131,14 +113,6 @@ export const SettingsPage = () => {
             <div className="text-center">
               <div className="w-16 h-16 mx-auto border-4 rounded-full border-iskcon-primary border-t-transparent animate-spin"></div>
               <p className="mt-4 font-medium text-iskcon-primary">Loading settings...</p>
-              <div className="mt-4 text-xs text-gray-500 text-left max-w-md">
-                <p>Debug info:</p>
-                <ul className="list-disc pl-5">
-                  {debugInfo.map((info, index) => (
-                    <li key={index}>{info}</li>
-                  ))}
-                </ul>
-              </div>
             </div>
           </div>
         ) : networkError ? (
