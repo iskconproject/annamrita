@@ -10,35 +10,8 @@ import { ReportsPage } from './pages/ReportsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ProtectedRoute, AdminRoute, VolunteerRoute } from './components/security/ProtectedRoute';
 import './App.css';
-
-// Protected route component
-const ProtectedRoute = ({ children, requiredRole }: { children: React.ReactElement, requiredRole?: string[] }) => {
-  const { user, isLoading } = useAuthStore();
-  const location = window.location;
-
-  // If we're still loading, don't redirect yet
-  if (isLoading) {
-    return children;
-  }
-
-  // Only redirect if we're sure there's no user
-  if (!user) {
-    // Save the current path to localStorage before redirecting
-    if (location.pathname !== '/login') {
-      localStorage.setItem('redirectPath', location.pathname);
-    }
-    return <Navigate to="/login" replace />;
-  }
-
-  // Check role permissions
-  if (requiredRole && !requiredRole.includes(user.role)) {
-    return <Navigate to="/" replace />;
-  }
-
-  // If we have a user, render the children
-  return children;
-};
 
 function App() {
   const { checkSession, isLoading } = useAuthStore();
@@ -71,72 +44,72 @@ function App() {
           <Route
             path="/"
             element={
-              <ProtectedRoute>
+              <VolunteerRoute>
                 <DashboardPage />
-              </ProtectedRoute>
+              </VolunteerRoute>
             }
           />
 
           <Route
             path="/pos"
             element={
-              <ProtectedRoute>
+              <VolunteerRoute>
                 <POSPage />
-              </ProtectedRoute>
+              </VolunteerRoute>
             }
           />
 
           <Route
             path="/orders"
             element={
-              <ProtectedRoute>
+              <VolunteerRoute>
                 <OrdersPage />
-              </ProtectedRoute>
+              </VolunteerRoute>
             }
           />
 
           <Route
             path="/menu"
             element={
-              <ProtectedRoute requiredRole={['admin']}>
+              <AdminRoute>
                 <MenuPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 
           <Route
             path="/reports"
             element={
-              <ProtectedRoute requiredRole={['admin']}>
+              <AdminRoute>
                 <ReportsPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 
           <Route
             path="/users"
             element={
-              <ProtectedRoute requiredRole={['admin']}>
+              <AdminRoute>
                 <UserManagementPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 
           <Route
             path="/receipt-config"
             element={
-              <ProtectedRoute requiredRole={['admin']}>
+              <AdminRoute>
                 <ReceiptConfigPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 
           <Route
             path="/settings"
             element={
-              <ProtectedRoute requiredRole={['admin']}>
+              <AdminRoute>
                 <SettingsPage />
-              </ProtectedRoute>
+              </AdminRoute>
             }
           />
 

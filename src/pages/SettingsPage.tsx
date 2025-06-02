@@ -13,6 +13,7 @@ import { AlertCircle } from 'lucide-react';
 import { MenuItem } from '@/types/menu';
 import { CategoriesManagement } from '@/components/categories/CategoriesManagement';
 import { PrinterSettings } from '@/components/settings/PrinterSettings';
+import { SecurityDashboard } from '@/components/security/SecurityDashboard';
 
 export const SettingsPage = () => {
   // Receipt config state
@@ -30,7 +31,7 @@ export const SettingsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Active section state
-  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'categories' | 'printer'>('receipt');
+  const [activeSection, setActiveSection] = useState<'receipt' | 'menu' | 'categories' | 'printer' | 'security'>('receipt');
 
   // Loading state for the entire settings page
   const [isPageLoading, setIsPageLoading] = useState(true);
@@ -166,6 +167,13 @@ export const SettingsPage = () => {
                 className={activeSection === 'printer' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
               >
                 Printer
+              </Button>
+              <Button
+                variant={activeSection === 'security' ? 'default' : 'outline'}
+                onClick={() => setActiveSection('security')}
+                className={activeSection === 'security' ? 'bg-iskcon-primary hover:bg-iskcon-primary/90' : ''}
+              >
+                Security
               </Button>
             </div>
 
@@ -358,6 +366,20 @@ export const SettingsPage = () => {
 
               {activeSection === 'printer' && (
                 <PrinterSettings />
+              )}
+
+              {activeSection === 'security' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Security Dashboard</CardTitle>
+                    <CardDescription>
+                      Monitor security events, audit logs, and system access
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <SecurityDashboard />
+                  </CardContent>
+                </Card>
               )}
             </div>
           </>

@@ -1,7 +1,18 @@
 import { create } from 'zustand';
-import { account, databases, DATABASE_ID, USERS_COLLECTION_ID } from '../services/appwrite';
+import { account } from '../services/appwrite';
 import { User, UserRole } from '../types/auth';
-import { ID, Query } from 'appwrite';
+import {
+  SecureUserService,
+  SecureAuthService,
+  SecurityError,
+  PermissionError,
+  ValidationError
+} from '../services/secureApi';
+import {
+  rateLimiter,
+  sanitizeError,
+  auditLogger
+} from '../utils/security';
 
 interface AuthState {
   user: User | null;
@@ -17,9 +28,6 @@ interface AuthState {
   checkSession: () => Promise<void>;
 }
 
-// Admin user credentials
-const ADMIN_EMAIL = 'arindamdawn3@gmail.com';
-
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   users: [],
@@ -28,121 +36,90 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
+
     try {
-      // Check if there's an active session and delete it first
-      try {
-        // Try to get the current session
-        await account.getSession('current');
-        // If successful, delete it
-        await account.deleteSession('current');
-      } catch (sessionError) {
-        // No active session or error getting session, we can proceed
-        console.log('No active session found or error getting session');
+      // Check rate limiting
+      if (rateLimiter.isRateLimited(email)) {
+        throw new SecurityError('Too many login attempts. Please try again later.');
       }
 
-      // Now create a new session
-      console.log('Creating email password session...');
-      await account.createEmailPasswordSession(email, password);
-      console.log('Session created successfully');
+      // Check if there's an active session and delete it first
+      try {
+        await account.getSession('current');
+        await account.deleteSession('current');
+      } catch (sessionError) {
+        // No active session, proceed
+        console.log('No active session found');
+      }
 
-      console.log('Getting account details...');
-      const accountDetails = await account.get();
-      console.log('Account details:', accountDetails);
+      // Use secure authentication service
+      const user = await SecureAuthService.login(email, password);
 
-      // Determine if this is the admin user
-      const isAdmin = email === ADMIN_EMAIL || accountDetails.labels.includes('admin');
-
-      // Set user role based on admin status
-      const userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
-
-      const user: User = {
-        id: accountDetails.$id,
-        email: accountDetails.email,
-        name: accountDetails.name,
-        role: userRole,
-      };
+      // Reset rate limiter on successful login
+      rateLimiter.reset(email);
 
       console.log('Setting user in store:', user);
       set({ user, isLoading: false });
       console.log('Login completed successfully');
+
     } catch (error) {
       console.error('Login error:', error);
+
+      let errorMessage = 'Failed to login';
+
+      if (error instanceof SecurityError || error instanceof PermissionError || error instanceof ValidationError) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = sanitizeError(error);
+      }
+
       set({
-        error: error instanceof Error ? error.message : 'Failed to login',
+        error: errorMessage,
         isLoading: false
       });
     }
   },
 
-  register: async (email: string, password: string, name: string, role: UserRole) => {
-    set({ isLoading: true, error: null });
-    try {
-      // Create the user in Appwrite auth
-      const response = await account.create(
-        ID.unique(),
-        email,
-        password,
-        name
-      );
-
-      // Store user details with role in the database
-      await databases.createDocument(
-        DATABASE_ID,
-        USERS_COLLECTION_ID,
-        ID.unique(),
-        {
-          userId: response.$id,
-          email: response.email,
-          name: response.name,
-          role: role
-        }
-      );
-
-      // Automatically log in the user after registration
-      await get().login(email, password);
-
-      set({ isLoading: false });
-    } catch (error) {
-      console.error('Registration error:', error);
-      set({
-        error: error instanceof Error ? error.message : 'Failed to register',
-        isLoading: false
-      });
-    }
+  register: async (_email: string, _password: string, _name: string, _role: UserRole) => {
+    // Registration is disabled for security reasons
+    // All user creation should go through the secure addUser method
+    throw new SecurityError('Direct registration is disabled. Please contact an administrator to create your account.');
   },
 
   addUser: async (email: string, password: string, name: string, role: UserRole) => {
     set({ isLoading: true, error: null });
     try {
-      // Create the user in Appwrite auth
-      const response = await account.create(
-        ID.unique(),
+      const currentUser = get().user;
+      if (!currentUser) {
+        throw new SecurityError('You must be logged in to add users');
+      }
+
+      // Use secure user service
+      const newUser = await SecureUserService.createUser(
+        currentUser.id,
         email,
         password,
-        name
+        name,
+        role
       );
 
-      // Store user details with role in the database
-      await databases.createDocument(
-        DATABASE_ID,
-        USERS_COLLECTION_ID,
-        ID.unique(),
-        {
-          userId: response.$id,
-          email: response.email,
-          name: response.name,
-          role: role
-        }
-      );
+      // Update users list
+      const users = [...get().users, newUser];
+      set({ users, isLoading: false });
 
-      // Fetch updated users list
-      await get().fetchUsers();
-
-      set({ isLoading: false });
     } catch (error) {
       console.error('Add user error:', error);
+
+      let errorMessage = 'Failed to add user';
+
+      if (error instanceof SecurityError || error instanceof PermissionError || error instanceof ValidationError) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = sanitizeError(error);
+      }
+
       set({
-        error: error instanceof Error ? error.message : 'Failed to add user',
+        error: errorMessage,
         isLoading: false
       });
     }
@@ -156,43 +133,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true, error: null });
     try {
-      try {
-        const response = await databases.listDocuments(
-          DATABASE_ID,
-          USERS_COLLECTION_ID
-        );
-
-        const users = response.documents.map(doc => ({
-          id: doc.userId,
-          email: doc.email,
-          name: doc.name,
-          role: doc.role as UserRole,
-        }));
-
-        set({ users, isLoading: false });
-      } catch (dbError) {
-        // Check if it's a network error
-        if (dbError instanceof TypeError && dbError.message.includes('Failed to fetch')) {
-          console.error('Network error when fetching users:', dbError);
-          throw dbError; // Re-throw to be caught by the outer catch
-        }
-
-        // Handle database not found or collection not found errors gracefully
-        console.warn('Users collection not found or access denied:', dbError);
-
-        // Use sample users for development
-        const sampleUsers: User[] = [
-          { id: 'admin-1', name: 'Admin User', email: 'admin@example.com', role: 'admin' },
-          { id: 'volunteer-1', name: 'Volunteer User', email: 'volunteer@example.com', role: 'volunteer' },
-        ];
-
-        set({ users: sampleUsers, isLoading: false });
+      const currentUser = get().user;
+      if (!currentUser) {
+        throw new SecurityError('You must be logged in to fetch users');
       }
+
+      // Use secure user service
+      const users = await SecureUserService.listUsers(currentUser.id);
+      set({ users, isLoading: false });
+
     } catch (error) {
       console.error('Fetch users error:', error);
 
-      // Use sample data for network errors too
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      let errorMessage = 'Failed to fetch users';
+
+      if (error instanceof SecurityError || error instanceof PermissionError || error instanceof ValidationError) {
+        errorMessage = error.message;
+        set({
+          error: errorMessage,
+          isLoading: false
+        });
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        // Network error - use offline fallback
         const offlineUsers: User[] = [
           { id: 'offline-admin', name: 'Admin User (Offline)', email: 'admin@example.com', role: 'admin' },
           { id: 'offline-volunteer', name: 'Volunteer User (Offline)', email: 'volunteer@example.com', role: 'volunteer' },
@@ -205,7 +167,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         });
       } else {
         set({
-          error: error instanceof Error ? error.message : 'Failed to fetch users',
+          error: sanitizeError(error),
           isLoading: false
         });
       }
@@ -215,29 +177,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   deleteUser: async (userId: string) => {
     set({ isLoading: true, error: null });
     try {
-      // Find the user document by userId
-      const response = await databases.listDocuments(
-        DATABASE_ID,
-        USERS_COLLECTION_ID,
-        [Query.equal('userId', userId)]
-      );
-
-      if (response.documents.length > 0) {
-        // Delete the user document
-        await databases.deleteDocument(
-          DATABASE_ID,
-          USERS_COLLECTION_ID,
-          response.documents[0].$id
-        );
+      const currentUser = get().user;
+      if (!currentUser) {
+        throw new SecurityError('You must be logged in to delete users');
       }
+
+      // Use secure user service
+      await SecureUserService.deleteUser(currentUser.id, userId);
 
       // Update the users list
       const users = get().users.filter(user => user.id !== userId);
       set({ users, isLoading: false });
+
     } catch (error) {
       console.error('Delete user error:', error);
+
+      let errorMessage = 'Failed to delete user';
+
+      if (error instanceof SecurityError || error instanceof PermissionError || error instanceof ValidationError) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = sanitizeError(error);
+      }
+
       set({
-        error: error instanceof Error ? error.message : 'Failed to delete user',
+        error: errorMessage,
         isLoading: false
       });
     }
@@ -245,15 +209,41 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     set({ isLoading: true, error: null });
+    const currentUser = get().user;
+
     try {
       await account.deleteSession('current');
+
+      // Audit log the logout
+      if (currentUser) {
+        auditLogger.log({
+          userId: currentUser.id,
+          action: 'logout',
+          resource: 'auth',
+          success: true,
+          details: { email: currentUser.email }
+        });
+      }
+
       // Only clear the redirect path on explicit logout
       localStorage.removeItem('redirectPath');
       set({ user: null, isLoading: false });
     } catch (error) {
       console.error('Logout error:', error);
+
+      // Audit log the failed logout
+      if (currentUser) {
+        auditLogger.log({
+          userId: currentUser.id,
+          action: 'logout',
+          resource: 'auth',
+          success: false,
+          details: { error: sanitizeError(error) }
+        });
+      }
+
       set({
-        error: error instanceof Error ? error.message : 'Failed to logout',
+        error: sanitizeError(error),
         isLoading: false
       });
     }
@@ -266,40 +256,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     console.log('Checking session...');
     set({ isLoading: true, error: null });
     try {
-      // First check if we have a current session
-      try {
-        await account.getSession('current');
-      } catch (sessionError) {
-        console.log('No active session found:', sessionError);
+      // Use secure authentication service
+      const user = await SecureAuthService.checkSession();
+
+      if (user) {
+        console.log('Setting user in store:', user);
+        set({ user, isLoading: false });
+        console.log('Session check completed successfully');
+      } else {
+        console.log('No valid session found');
         set({ user: null, isLoading: false });
-        return; // Exit early if no session exists
       }
-
-      // If we have a session, get the account details
-      console.log('Getting account details...');
-      const accountDetails = await account.get();
-      console.log('Account details retrieved:', accountDetails);
-
-      // Determine if this is the admin user
-      const isAdmin = accountDetails.email === ADMIN_EMAIL || accountDetails.labels.includes('admin');
-
-      // Set user role based on admin status
-      const userRole: UserRole = isAdmin ? 'admin' : 'volunteer';
-
-      const user: User = {
-        id: accountDetails.$id,
-        email: accountDetails.email,
-        name: accountDetails.name,
-        role: userRole,
-      };
-
-      console.log('Setting user in store:', user);
-      set({ user, isLoading: false });
-      console.log('Session check completed successfully');
     } catch (error) {
       // Something went wrong with the session check
       console.error('Error checking session:', error);
-      set({ user: null, isLoading: false, error: 'Failed to check session' });
+      set({ user: null, isLoading: false, error: sanitizeError(error) });
     }
   },
 }));
