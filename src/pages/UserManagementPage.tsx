@@ -43,6 +43,13 @@ export const UserManagementPage = () => {
     setDeleteDialogOpen(true);
   };
 
+  const handleDeleteById = (userId: string) => {
+    const user = users.find(u => u.id === userId);
+    if (user) {
+      handleDeleteClick(user);
+    }
+  };
+
   const handleDeleteConfirm = async () => {
     if (userToDelete) {
       await deleteUser(userToDelete.id);
@@ -120,7 +127,7 @@ export const UserManagementPage = () => {
               <UserList
                 users={users}
                 onEdit={handleEditUser}
-                onDelete={handleDeleteClick}
+                onDelete={handleDeleteById}
               />
             )}
           </CardContent>

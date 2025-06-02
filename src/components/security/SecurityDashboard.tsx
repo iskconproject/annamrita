@@ -10,8 +10,7 @@ import {
   Activity,
   Eye,
   Search,
-  Download,
-  Filter
+  Download
 } from 'lucide-react';
 import { auditLogger, AuditLog } from '../../utils/security';
 import { useAuthStore } from '../../store/authStore';

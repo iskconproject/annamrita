@@ -28,7 +28,7 @@ import { PrinterDiagnostics } from '../pos/PrinterDiagnostics';
 export const PrinterSettings = () => {
   const [printers, setPrinters] = useState<PrinterInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPrinter, setSelectedPrinter] = useState<PrinterInfo | null>(null);
+  const [,] = useState<PrinterInfo | null>(null);
   const [testResults, setTestResults] = useState<Record<string, boolean>>({});
   const [showDiagnostics, setShowDiagnostics] = useState(false);
 

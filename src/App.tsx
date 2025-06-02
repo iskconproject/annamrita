@@ -10,7 +10,7 @@ import { ReportsPage } from './pages/ReportsPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
 import { SettingsPage } from './pages/SettingsPage';
-import { ProtectedRoute, AdminRoute, VolunteerRoute } from './components/security/ProtectedRoute';
+import { AdminRoute, VolunteerRoute } from './components/security/ProtectedRoute';
 import './App.css';
 
 function App() {

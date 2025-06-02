@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Printer, TestTube, CheckCircle, XCircle } from 'lucide-react';
-import { 
-  printReceiptUSB, 
-  printReceipt, 
+import {
+  printReceiptUSB,
+  printReceipt,
   printReceiptAuto,
-  printReceiptFallback 
+  printReceiptFallback
 } from '../../services/printService';
 import { Order } from '../../types/order';
 import { DEFAULT_RECEIPT_CONFIG } from '../../types/receipt';
@@ -19,26 +19,25 @@ const testOrder: Order = {
   orderNumber: '2501270001',
   items: [
     {
-      id: '1',
+      itemId: '1',
       name: 'Prasadam Thali',
       shortName: 'Thali',
       price: 150,
-      quantity: 2,
-      category: 'Main Course'
+      quantity: 2
     },
     {
-      id: '2',
+      itemId: '2',
       name: 'Kheer',
       shortName: 'Kheer',
       price: 50,
-      quantity: 1,
-      category: 'Dessert'
+      quantity: 1
     }
   ],
   total: 350,
   phoneNumber: '+91 9876543210',
   createdAt: new Date(),
-  updatedAt: new Date()
+  status: 'Completed',
+  createdBy: 'test-user'
 };
 
 export const PrinterTestPage = () => {
@@ -56,9 +55,9 @@ export const PrinterTestPage = () => {
     } catch (error) {
       setTestResults(prev => ({
         ...prev,
-        [testName]: { 
-          success: false, 
-          message: error instanceof Error ? error.message : 'Unknown error occurred' 
+        [testName]: {
+          success: false,
+          message: error instanceof Error ? error.message : 'Unknown error occurred'
         }
       }));
     } finally {
@@ -74,8 +73,8 @@ export const PrinterTestPage = () => {
   const getTestIcon = (testName: string) => {
     const result = testResults[testName];
     if (!result) return null;
-    return result.success ? 
-      <CheckCircle className="h-4 w-4 text-green-500" /> : 
+    return result.success ?
+      <CheckCircle className="h-4 w-4 text-green-500" /> :
       <XCircle className="h-4 w-4 text-red-500" />;
   };
 
@@ -112,7 +111,7 @@ export const PrinterTestPage = () => {
                 <div><strong>Items:</strong></div>
                 <ul className="ml-4 space-y-1">
                   {testOrder.items.map(item => (
-                    <li key={item.id}>
+                    <li key={item.itemId}>
                       {item.quantity} x {item.name} @ ₹{item.price} = ₹{item.quantity * item.price}
                     </li>
                   ))}
@@ -136,7 +135,7 @@ export const PrinterTestPage = () => {
               <p className="text-sm text-gray-600 mb-3">
                 Tests direct USB thermal printer connection using WebUSB API.
               </p>
-              <Button 
+              <Button
                 onClick={testUSBPrinting}
                 disabled={isLoading || !navigator.usb}
                 className="w-full"
@@ -168,7 +167,7 @@ export const PrinterTestPage = () => {
               <p className="text-sm text-gray-600 mb-3">
                 Tests COM port/Bluetooth printer connection using Web Serial API.
               </p>
-              <Button 
+              <Button
                 onClick={testSerialPrinting}
                 disabled={isLoading || !navigator.serial}
                 className="w-full"
@@ -200,7 +199,7 @@ export const PrinterTestPage = () => {
               <p className="text-sm text-gray-600 mb-3">
                 Automatically detects and uses the best available printer (USB → Serial → Fallback).
               </p>
-              <Button 
+              <Button
                 onClick={testAutoPrinting}
                 disabled={isLoading}
                 className="w-full"
@@ -228,7 +227,7 @@ export const PrinterTestPage = () => {
               <p className="text-sm text-gray-600 mb-3">
                 Uses browser's built-in print dialog as fallback method.
               </p>
-              <Button 
+              <Button
                 onClick={testFallbackPrinting}
                 disabled={isLoading}
                 className="w-full"

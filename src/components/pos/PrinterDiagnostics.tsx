@@ -7,7 +7,6 @@ import {
   requestSerialPrinter,
   testUSBConnection,
   testSerialConnection,
-  testPrinterConnection,
   COMMON_BAUD_RATES,
   PrinterInfo
 } from '../../utils/printerUtils';
@@ -22,7 +21,7 @@ export const PrinterDiagnostics = ({ initialOpen = false }: PrinterDiagnosticsPr
   const [isLoading, setIsLoading] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [selectedBaudRate, setSelectedBaudRate] = useState(9600);
-  const [detectedPrinters, setDetectedPrinters] = useState<PrinterInfo[]>([]);
+  const [, setDetectedPrinters] = useState<PrinterInfo[]>([]);
 
   const handleDetectAllPrinters = async () => {
     setIsLoading(true);

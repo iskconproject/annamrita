@@ -3,21 +3,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Printer, 
-  Usb, 
-  TestTube, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Printer,
+  Usb,
+  TestTube,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   RefreshCw,
   Play
 } from 'lucide-react';
-import { 
-  detectAllPrinters, 
-  testUSBConnection, 
+import {
+  detectAllPrinters,
+  testUSBConnection,
   requestUSBPrinter,
-  PrinterInfo 
+  PrinterInfo
 } from '../../utils/printerUtils';
 import { printReceiptUSB, printReceipt, printReceiptAuto } from '../../services/printService';
 import { Order } from '../../types/order';
@@ -41,12 +41,12 @@ export const PrinterDebugger = () => {
     setIsLoading(true);
     clearResults();
     addTestResult('🔍 Starting printer detection...');
-    
+
     try {
       const detectedPrinters = await detectAllPrinters();
       setPrinters(detectedPrinters);
       addTestResult(`✅ Found ${detectedPrinters.length} printer(s)`);
-      
+
       detectedPrinters.forEach(printer => {
         addTestResult(`📋 ${printer.name} (${printer.type}) - Connected: ${printer.isConnected ? 'Yes' : 'No'}`);
       });
@@ -59,7 +59,7 @@ export const PrinterDebugger = () => {
 
   const testUSBPrinter = async () => {
     addTestResult('🔌 Testing USB printer connection...');
-    
+
     try {
       const result = await testUSBConnection();
       if (result) {
@@ -74,7 +74,7 @@ export const PrinterDebugger = () => {
 
   const requestUSBAccess = async () => {
     addTestResult('🔐 Requesting USB printer access...');
-    
+
     try {
       const device = await requestUSBPrinter();
       if (device) {
@@ -90,7 +90,7 @@ export const PrinterDebugger = () => {
   const testPrintReceipt = async (method: 'usb' | 'serial' | 'auto') => {
     setIsTestingPrint(true);
     addTestResult(`🖨️ Testing ${method.toUpperCase()} printing...`);
-    
+
     // Create a test order
     const testOrder: Order = {
       id: 'test-' + Date.now(),
@@ -106,12 +106,14 @@ export const PrinterDebugger = () => {
       ],
       total: 10.00,
       createdAt: new Date(),
-      phoneNumber: '1234567890'
+      phoneNumber: '1234567890',
+      status: 'Completed',
+      createdBy: 'test-user'
     };
 
     try {
       let result = false;
-      
+
       switch (method) {
         case 'usb':
           result = await printReceiptUSB(testOrder, DEFAULT_RECEIPT_CONFIG);
@@ -123,7 +125,7 @@ export const PrinterDebugger = () => {
           result = await printReceiptAuto(testOrder, DEFAULT_RECEIPT_CONFIG);
           break;
       }
-      
+
       if (result) {
         addTestResult(`✅ ${method.toUpperCase()} printing successful!`);
       } else {
@@ -150,32 +152,32 @@ export const PrinterDebugger = () => {
       <CardContent className="space-y-6">
         {/* Detection Controls */}
         <div className="flex gap-2 flex-wrap">
-          <Button 
-            onClick={detectPrinters} 
+          <Button
+            onClick={detectPrinters}
             disabled={isLoading}
             variant="outline"
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
             Detect Printers
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={requestUSBAccess}
             variant="outline"
           >
             <Usb className="h-4 w-4 mr-2" />
             Request USB Access
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={testUSBPrinter}
             variant="outline"
           >
             <CheckCircle className="h-4 w-4 mr-2" />
             Test USB Connection
           </Button>
-          
-          <Button 
+
+          <Button
             onClick={clearResults}
             variant="outline"
           >
@@ -201,8 +203,8 @@ export const PrinterDebugger = () => {
                     <Badge variant={printer.isConnected ? "default" : "secondary"}>
                       {printer.isConnected ? "Connected" : "Available"}
                     </Badge>
-                    {printer.isConnected ? 
-                      <CheckCircle className="h-4 w-4 text-green-500" /> : 
+                    {printer.isConnected ?
+                      <CheckCircle className="h-4 w-4 text-green-500" /> :
                       <XCircle className="h-4 w-4 text-gray-400" />
                     }
                   </div>
@@ -216,7 +218,7 @@ export const PrinterDebugger = () => {
         <div>
           <h3 className="text-lg font-semibold mb-3">Test Printing</h3>
           <div className="flex gap-2 flex-wrap">
-            <Button 
+            <Button
               onClick={() => testPrintReceipt('auto')}
               disabled={isTestingPrint}
               className="bg-iskcon-primary hover:bg-iskcon-dark"
@@ -224,8 +226,8 @@ export const PrinterDebugger = () => {
               <Play className="h-4 w-4 mr-2" />
               Test Auto-Detect Print
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => testPrintReceipt('usb')}
               disabled={isTestingPrint}
               variant="outline"
@@ -233,8 +235,8 @@ export const PrinterDebugger = () => {
               <Usb className="h-4 w-4 mr-2" />
               Test USB Print
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={() => testPrintReceipt('serial')}
               disabled={isTestingPrint}
               variant="outline"

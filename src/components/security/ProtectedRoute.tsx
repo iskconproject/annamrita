@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { UserRole } from '../../types/auth';
-import { hasPermission, auditLogger, sanitizeError } from '../../utils/security';
+import { hasPermission, auditLogger } from '../../utils/security';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;
@@ -11,9 +11,9 @@ interface ProtectedRouteProps {
   fallbackPath?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiredRole, 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  requiredRole,
   requiredPermission,
   fallbackPath = '/login'
 }) => {
@@ -38,19 +38,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (location.pathname !== '/login') {
       localStorage.setItem('redirectPath', location.pathname);
     }
-    
+
     // Audit log unauthorized access attempt
     auditLogger.log({
       userId: 'anonymous',
       action: 'unauthorized_access_attempt',
       resource: location.pathname,
       success: false,
-      details: { 
+      details: {
         path: location.pathname,
         reason: 'no_user_session'
       }
     });
-    
+
     return <Navigate to={fallbackPath} replace />;
   }
 
@@ -62,13 +62,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       action: 'insufficient_role_access_attempt',
       resource: location.pathname,
       success: false,
-      details: { 
+      details: {
         userRole: user.role,
         requiredRoles: requiredRole,
         path: location.pathname
       }
     });
-    
+
     return <Navigate to="/" replace />;
   }
 
@@ -80,13 +80,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       action: 'insufficient_permission_access_attempt',
       resource: location.pathname,
       success: false,
-      details: { 
+      details: {
         userRole: user.role,
         requiredPermission,
         path: location.pathname
       }
     });
-    
+
     return <Navigate to="/" replace />;
   }
 
@@ -96,7 +96,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     action: 'route_access',
     resource: location.pathname,
     success: true,
-    details: { 
+    details: {
       userRole: user.role,
       path: location.pathname
     }
