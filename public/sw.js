@@ -1,11 +1,9 @@
-const CACHE_NAME = 'annamrita-pos-v1';
+const CACHE_NAME = 'annamrita-pos-v2';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/src/main.tsx',
-  '/src/App.tsx',
-  '/src/index.css',
-  '/src/App.css',
+  '/manifest.json',
+  '/favicon.ico',
 ];
 
 // Install a service worker
@@ -15,6 +13,11 @@ self.addEventListener('install', (event) => {
       .then((cache) => {
         console.log('Opened cache');
         return cache.addAll(urlsToCache);
+      })
+      .catch((error) => {
+        console.error('Failed to cache resources:', error);
+        // Don't fail the installation if caching fails
+        return Promise.resolve();
       })
   );
 });
