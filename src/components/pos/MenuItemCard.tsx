@@ -17,6 +17,7 @@ export const MenuItemCard = ({ item }: MenuItemCardProps) => {
       shortName: item.shortName,
       quantity: 1,
       price: item.price,
+      category: item.category,
     };
 
     addItemToOrder(orderItem);
@@ -27,8 +28,8 @@ export const MenuItemCard = ({ item }: MenuItemCardProps) => {
       onClick={handleAddToOrder}
       disabled={!item.available}
       className={`p-4 text-left rounded-lg border transition-all ${item.available
-          ? 'bg-white hover:bg-iskcon-light border-gray-100 hover:border-iskcon-primary'
-          : 'bg-gray-100 opacity-60 cursor-not-allowed border-gray-200'
+        ? 'bg-white hover:bg-iskcon-light border-gray-100 hover:border-iskcon-primary'
+        : 'bg-gray-100 opacity-60 cursor-not-allowed border-gray-200'
         }`}
     >
       <div className="flex justify-between items-start">

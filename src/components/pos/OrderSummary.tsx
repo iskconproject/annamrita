@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
-import { printReceipt, printReceiptFallback, printReceiptAuto } from '../../services/printService.tsx';
+import { printReceipt, printReceiptFallback, printReceiptAuto, printReceiptsByCategory, printReceiptsByCategoryFallback, printReceiptsByCategoryAuto, groupItemsByCategory } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 
@@ -12,6 +12,7 @@ export const OrderSummary = () => {
   const [printError, setPrintError] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState<boolean | null>(null);
   const [orderMessage, setOrderMessage] = useState<string | null>(null);
+  const [useCategoryBasedPrinting, setUseCategoryBasedPrinting] = useState(true);
 
   // Only fetch receipt config if it's not already loaded
   useEffect(() => {
@@ -43,20 +44,71 @@ export const OrderSummary = () => {
 
       if (order) {
         try {
-          if (useFallbackPrinting) {
-            // Use browser print dialog method if fallback is enabled
-            await printReceiptFallback(order, config);
-          } else if (useAutoDetection) {
-            // Use auto-detection to find the best available printer
-            console.log('Using auto-detection to find the best printer...');
-            await printReceiptAuto(order, config);
+          let printResult;
+
+          if (useCategoryBasedPrinting) {
+            // Check if order has items from multiple categories
+            const categoryGroups = groupItemsByCategory(order);
+            const categories = Object.keys(categoryGroups);
+
+            if (categories.length > 1) {
+              console.log(`🏷️ Order has items from ${categories.length} categories: ${categories.join(', ')}`);
+              console.log('Using category-based printing...');
+
+              if (useFallbackPrinting) {
+                printResult = await printReceiptsByCategoryFallback(order, config);
+              } else if (useAutoDetection) {
+                printResult = await printReceiptsByCategoryAuto(order, config);
+              } else {
+                printResult = await printReceiptsByCategory(order, config, false);
+              }
+
+              // Handle category-based printing results
+              if (printResult.success) {
+                setOrderSuccess(true);
+                setOrderMessage(`Order #${order.orderNumber} was successfully placed and ${categories.length} category-based receipts were printed.`);
+              } else {
+                const failedCategories = Object.entries(printResult.results)
+                  .filter(([, success]) => !success)
+                  .map(([category]) => category);
+
+                if (failedCategories.length === categories.length) {
+                  throw new Error(`Failed to print all category receipts: ${Object.values(printResult.errors).join(', ')}`);
+                } else {
+                  setOrderSuccess(true);
+                  setOrderMessage(`Order #${order.orderNumber} was successfully placed. ${categories.length - failedCategories.length}/${categories.length} category receipts printed successfully. Failed: ${failedCategories.join(', ')}`);
+                }
+              }
+            } else {
+              // Single category, use regular printing
+              console.log(`🏷️ Order has items from single category: ${categories[0]}`);
+              console.log('Using regular printing...');
+
+              if (useFallbackPrinting) {
+                await printReceiptFallback(order, config);
+              } else if (useAutoDetection) {
+                await printReceiptAuto(order, config);
+              } else {
+                await printReceipt(order, config, false);
+              }
+
+              setOrderSuccess(true);
+              setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+            }
           } else {
-            // Use manual Web Serial API method
-            await printReceipt(order, config, false);
+            // Use regular single receipt printing
+            if (useFallbackPrinting) {
+              await printReceiptFallback(order, config);
+            } else if (useAutoDetection) {
+              await printReceiptAuto(order, config);
+            } else {
+              await printReceipt(order, config, false);
+            }
+
+            setOrderSuccess(true);
+            setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
           }
-          // If we get here, printing was successful
-          setOrderSuccess(true);
-          setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+
           // Only clear the current order on successful order creation
           clearCurrentOrder();
         } catch (error: unknown) {
@@ -158,6 +210,13 @@ export const OrderSummary = () => {
     setOrderMessage(null);
   };
 
+  const toggleCategoryBasedPrinting = () => {
+    setUseCategoryBasedPrinting(!useCategoryBasedPrinting);
+    setPrintError(null);
+    setOrderSuccess(null);
+    setOrderMessage(null);
+  };
+
   const total = calculateTotal();
 
   return (
@@ -177,6 +236,11 @@ export const OrderSummary = () => {
                 <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{item.name}</h3>
                   <p className="text-sm text-gray-500">₹{item.price.toFixed(2)} each</p>
+                  {useCategoryBasedPrinting && (
+                    <p className="text-xs text-iskcon-primary bg-iskcon-light px-2 py-1 rounded-full inline-block mt-1">
+                      {item.category}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -209,6 +273,22 @@ export const OrderSummary = () => {
               <span className="text-lg font-semibold">Total:</span>
               <span className="text-lg font-bold text-iskcon-primary">₹{total.toFixed(2)}</span>
             </div>
+            {useCategoryBasedPrinting && currentOrder.length > 0 && (
+              <div className="mt-2 text-sm text-gray-600">
+                {(() => {
+                  const categories = [...new Set(currentOrder.map(item => item.category))];
+                  return categories.length > 1 ? (
+                    <span className="text-iskcon-primary font-medium">
+                      📄 Will print {categories.length} separate receipts: {categories.join(', ')}
+                    </span>
+                  ) : (
+                    <span className="text-gray-500">
+                      📄 Single receipt for {categories[0]}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           <div className="pt-4 mt-4">
@@ -259,6 +339,20 @@ export const OrderSummary = () => {
           )}
 
           <div className="flex flex-col mt-4 space-y-2">
+            <div className="flex items-center">
+              <button
+                onClick={toggleCategoryBasedPrinting}
+                type="button"
+                className="text-xs text-iskcon-primary hover:text-iskcon-dark flex items-center"
+              >
+                <span className={`mr-2 ${useCategoryBasedPrinting ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+                {useCategoryBasedPrinting ? 'Category-Based Receipts' : 'Single Receipt'}
+              </button>
+              <span className="ml-2 text-xs text-gray-500">
+                {useCategoryBasedPrinting ? '(Separate receipts per category)' : '(One receipt for all items)'}
+              </span>
+            </div>
+
             <div className="flex items-center">
               <button
                 onClick={togglePrintingMethod}

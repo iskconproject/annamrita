@@ -45,6 +45,10 @@ export const orderSchema = z.object({
       .int("Quantity must be a whole number")
       .min(1, "Quantity must be at least 1")
       .max(100, "Quantity must not exceed 100"),
+    category: z.string()
+      .min(1, "Category is required")
+      .max(50, "Category must not exceed 50 characters")
+      .regex(/^[a-zA-Z0-9\s\-'&().,]+$/, "Category contains invalid characters"),
   })).min(1, "At least one item is required"),
   total: z.number()
     .min(0, "Total must be positive")

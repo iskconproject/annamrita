@@ -6,6 +6,7 @@ export interface OrderItem {
   shortName: string;
   quantity: number;
   price: number;
+  category: string;
 }
 
 export interface Order {

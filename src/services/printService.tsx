@@ -524,3 +524,467 @@ export const printReceiptAuto = async (order: Order, config: ReceiptConfig = DEF
     throw error;
   }
 };
+
+// Function to group order items by category
+export const groupItemsByCategory = (order: Order): { [category: string]: Order } => {
+  const categoryGroups: { [category: string]: typeof order.items } = {};
+
+  // Group items by category
+  order.items.forEach(item => {
+    if (!categoryGroups[item.category]) {
+      categoryGroups[item.category] = [];
+    }
+    categoryGroups[item.category].push(item);
+  });
+
+  // Create separate orders for each category
+  const categoryOrders: { [category: string]: Order } = {};
+
+  Object.entries(categoryGroups).forEach(([category, items]) => {
+    const categoryTotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    categoryOrders[category] = {
+      ...order,
+      items,
+      total: categoryTotal,
+      // Add category suffix to order number to distinguish receipts
+      orderNumber: `${order.orderNumber}-${category.replace(/\s+/g, '').toUpperCase()}`
+    };
+  });
+
+  return categoryOrders;
+};
+
+// Function to generate category-specific receipt JSX
+export const generateCategoryReceiptJSX = (order: Order, category: string, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG) => {
+  const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
+
+  return (
+    <Printer type="epson" width={printWidthConfig.thermalWidth}>
+      <Text align="center" size={{ width: 1, height: 1 }}>{config.headerText}</Text>
+      <Br />
+      <Line />
+      <Row left="Order #" right={order.orderNumber} />
+      <Row left="Category" right={category} />
+      <Row left="Date" right={formatDate(order.createdAt)} />
+      <Row left="Time" right={formatTime(order.createdAt)} />
+      {order.phoneNumber && <Row left="Phone" right={order.phoneNumber} />}
+      <Br />
+      <Line />
+      <Text bold={true}>Items ({category}):</Text>
+      <Br />
+      {order.items.map((item, index) => (
+        <div key={index}>
+          <Row
+            left={`${item.quantity} x ${item.shortName || item.name}`}
+            right={`Rs.${(item.price * item.quantity).toFixed(2)}`}
+          />
+          <Text>{`  @ Rs.${item.price.toFixed(2)} each`}</Text>
+        </div>
+      ))}
+      <Line />
+      <Row left="CATEGORY TOTAL" right={`Rs.${order.total.toFixed(2)}`} />
+      <Br />
+      <Text align="center">{config.footerText}</Text>
+      <Text align="center">** {category} Counter **</Text>
+      <Cut />
+    </Printer>
+  );
+};
+
+// Function to print receipts split by category using Web Serial API
+export const printReceiptsByCategory = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG, useSpecificPort: boolean = false): Promise<{ success: boolean; results: { [category: string]: boolean }; errors: { [category: string]: string } }> => {
+  const categoryOrders = groupItemsByCategory(order);
+  const categories = Object.keys(categoryOrders);
+
+  console.log(`🏷️ Printing ${categories.length} category-based receipts:`, categories);
+
+  const results: { [category: string]: boolean } = {};
+  const errors: { [category: string]: string } = {};
+  let overallSuccess = true;
+
+  // Print each category receipt
+  for (const category of categories) {
+    const categoryOrder = categoryOrders[category];
+
+    try {
+      console.log(`🖨️ Printing receipt for category: ${category}`);
+
+      // Check if Web Serial API is supported
+      if (!navigator.serial) {
+        throw new Error('Web Serial API is not supported in this browser. Please use Chrome or Edge.');
+      }
+
+      // Generate receipt data using the category-specific JSX
+      const receiptJSX = generateCategoryReceiptJSX(categoryOrder, category, config);
+      const data = await render(receiptJSX);
+
+      // Get or request a serial port (similar to the main printReceipt function)
+      let port;
+      const ports = await navigator.serial.getPorts();
+
+      if (useSpecificPort && ports.length > 0) {
+        port = ports[0];
+      } else if (ports.length > 0) {
+        port = ports[0];
+      } else {
+        port = await navigator.serial.requestPort({ filters: [] });
+      }
+
+      // Configure and open the port
+      const portOptions = {
+        baudRate: 9600,
+        dataBits: 8,
+        stopBits: 1,
+        parity: 'none' as ParityType,
+        bufferSize: 4096,
+        flowControl: 'none' as const
+      };
+
+      await port.open(portOptions);
+
+      // Write data to printer
+      const writer = port.writable?.getWriter();
+      if (!writer) {
+        throw new Error('Could not get writer for the serial port');
+      }
+
+      await writer.write(data);
+      writer.releaseLock();
+
+      // Close the port
+      if (port.readable || port.writable) {
+        await port.close();
+      }
+
+      results[category] = true;
+      console.log(`✅ Successfully printed receipt for category: ${category}`);
+
+      // Add a small delay between prints to avoid conflicts
+      if (categories.indexOf(category) < categories.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to print receipt for category ${category}:`, errorMessage);
+      results[category] = false;
+      errors[category] = errorMessage;
+      overallSuccess = false;
+    }
+  }
+
+  return {
+    success: overallSuccess,
+    results,
+    errors
+  };
+};
+
+// Function to print receipts split by category using browser fallback
+export const printReceiptsByCategoryFallback = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<{ success: boolean; results: { [category: string]: boolean }; errors: { [category: string]: string } }> => {
+  const categoryOrders = groupItemsByCategory(order);
+  const categories = Object.keys(categoryOrders);
+
+  console.log(`🏷️ Printing ${categories.length} category-based receipts using browser fallback:`, categories);
+
+  const results: { [category: string]: boolean } = {};
+  const errors: { [category: string]: string } = {};
+  let overallSuccess = true;
+
+  // Print each category receipt
+  for (const category of categories) {
+    const categoryOrder = categoryOrders[category];
+
+    try {
+      console.log(`🖨️ Printing fallback receipt for category: ${category}`);
+
+      const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
+
+      // Create a new window for printing
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        throw new Error('Could not open print window. Please check your popup blocker settings.');
+      }
+
+      // Generate category-specific receipt HTML
+      const receiptHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Receipt #${categoryOrder.orderNumber} - ${category}</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              width: ${printWidthConfig.cssWidth};
+              margin: 0 auto;
+              padding: 8px;
+            }
+            .header {
+              text-align: center;
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 10px;
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              hyphens: auto;
+              line-height: 1.3;
+            }
+            .category {
+              text-align: center;
+              font-size: 13px;
+              font-weight: bold;
+              background-color: #f0f0f0;
+              padding: 5px;
+              margin-bottom: 10px;
+              border: 1px solid #ccc;
+            }
+            .info {
+              margin-bottom: 10px;
+            }
+            .items {
+              margin-bottom: 10px;
+            }
+            .item {
+              margin-bottom: 5px;
+            }
+            .total {
+              font-weight: bold;
+              margin-top: 10px;
+              border-top: 1px dashed #000;
+              padding-top: 5px;
+            }
+            .footer {
+              text-align: center;
+              margin-top: 10px;
+              font-size: 12px;
+            }
+            .counter {
+              text-align: center;
+              font-weight: bold;
+              margin-top: 10px;
+              padding: 5px;
+              background-color: #f9f9f9;
+              border: 1px dashed #000;
+            }
+            @media print {
+              body {
+                width: 100%;
+                max-width: ${printWidthConfig.cssWidth};
+              }
+              @page {
+                size: ${printWidthConfig.pageSize};
+                margin: 0;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">${config.headerText}</div>
+          <div class="category">CATEGORY: ${category}</div>
+
+          <div class="info">
+            <div>Order #: ${categoryOrder.orderNumber}</div>
+            <div>Date: ${formatDate(categoryOrder.createdAt)}</div>
+            <div>Time: ${formatTime(categoryOrder.createdAt)}</div>
+            ${categoryOrder.phoneNumber ? `<div>Phone: ${categoryOrder.phoneNumber}</div>` : ''}
+          </div>
+
+          <div class="items">
+            <div style="border-bottom: 1px dashed #000; margin-bottom: 5px;">Items (${category}):</div>
+            ${categoryOrder.items.map(item => `
+              <div class="item">
+                <div>${item.quantity} x ${item.shortName || item.name}</div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span>  @ Rs.${item.price.toFixed(2)} each</span>
+                  <span>Rs.${(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="total">
+            <div style="display: flex; justify-content: space-between;">
+              <span>CATEGORY TOTAL:</span>
+              <span>Rs.${categoryOrder.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="footer">${config.footerText}</div>
+          <div class="counter">** ${category} Counter **</div>
+
+          <script>
+            // Auto print when loaded
+            window.onload = function() {
+              window.print();
+              // Close the window after printing (or after cancel)
+              window.setTimeout(function() {
+                window.close();
+              }, 500);
+            };
+          </script>
+        </body>
+        </html>
+      `;
+
+      // Set the HTML content of the new window
+      printWindow.document.open();
+      printWindow.document.documentElement.innerHTML = receiptHTML.replace(/<!DOCTYPE html>|<html>|<\/html>/gi, '');
+      printWindow.document.close();
+
+      results[category] = true;
+      console.log(`✅ Successfully opened print dialog for category: ${category}`);
+
+      // Add a small delay between opening print windows
+      if (categories.indexOf(category) < categories.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to print fallback receipt for category ${category}:`, errorMessage);
+      results[category] = false;
+      errors[category] = errorMessage;
+      overallSuccess = false;
+    }
+  }
+
+  return {
+    success: overallSuccess,
+    results,
+    errors
+  };
+};
+
+// Function to print receipts split by category using auto-detection
+export const printReceiptsByCategoryAuto = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<{ success: boolean; results: { [category: string]: boolean }; errors: { [category: string]: string } }> => {
+  const categoryOrders = groupItemsByCategory(order);
+  const categories = Object.keys(categoryOrders);
+
+  console.log(`🏷️ Auto-printing ${categories.length} category-based receipts:`, categories);
+
+  const results: { [category: string]: boolean } = {};
+  const errors: { [category: string]: string } = {};
+  let overallSuccess = true;
+
+  // Detect available printers once
+  let printers;
+  try {
+    printers = await detectAllPrinters();
+    console.log(`🔍 Detected ${printers.length} printer(s) for category printing`);
+  } catch (error) {
+    console.warn('Could not detect printers, will try fallback method');
+    return await printReceiptsByCategoryFallback(order, config);
+  }
+
+  if (printers.length === 0) {
+    console.log('❌ No printers detected, using fallback method');
+    return await printReceiptsByCategoryFallback(order, config);
+  }
+
+  // Print each category receipt
+  for (const category of categories) {
+    const categoryOrder = categoryOrders[category];
+
+    try {
+      console.log(`🖨️ Auto-printing receipt for category: ${category}`);
+
+      // Try to print using the best available method
+      let printed = false;
+      let lastError: Error | null = null;
+
+      // Try USB printers first
+      const usbPrinters = printers.filter(p => p.type === 'usb');
+      if (usbPrinters.length > 0) {
+        for (const printer of usbPrinters) {
+          try {
+            // Generate receipt data using the category-specific JSX
+            const receiptJSX = generateCategoryReceiptJSX(categoryOrder, category, config);
+            const data = await render(receiptJSX);
+
+            // Use USB printing logic (simplified version)
+            if (!navigator.usb) {
+              throw new Error('WebUSB API is not supported');
+            }
+
+            const devices = await navigator.usb.getDevices();
+            const printerDevice = devices.find(device =>
+              THERMAL_PRINTER_VENDORS.some(vendor => vendor.vendorId === device.vendorId)
+            );
+
+            if (!printerDevice) {
+              throw new Error('No USB printer device found');
+            }
+
+            if (!printerDevice.opened) {
+              await printerDevice.open();
+            }
+            if (printerDevice.configuration === null) {
+              await printerDevice.selectConfiguration(1);
+            }
+            await printerDevice.claimInterface(0);
+
+            const config = printerDevice.configuration;
+            const interface_ = config?.interfaces[0];
+            const alternate = interface_?.alternates[0];
+            const endpoint = alternate?.endpoints.find(ep => ep.direction === 'out');
+
+            if (!endpoint) {
+              throw new Error('Could not find output endpoint');
+            }
+
+            await printerDevice.transferOut(endpoint.endpointNumber, data);
+            await printerDevice.close();
+
+            printed = true;
+            break;
+          } catch (usbError) {
+            lastError = usbError instanceof Error ? usbError : new Error(String(usbError));
+            console.warn(`❌ USB printer failed for category ${category}:`, lastError.message);
+          }
+        }
+      }
+
+      // Try Serial printers if USB failed
+      if (!printed) {
+        const serialPrinters = printers.filter(p => p.type === 'serial');
+        if (serialPrinters.length > 0) {
+          try {
+            // Use the existing serial printing logic
+            await printReceiptsByCategory(categoryOrder, config, false);
+            printed = true;
+          } catch (serialError) {
+            lastError = serialError instanceof Error ? serialError : new Error(String(serialError));
+            console.warn(`❌ Serial printer failed for category ${category}:`, lastError.message);
+          }
+        }
+      }
+
+      if (printed) {
+        results[category] = true;
+        console.log(`✅ Successfully printed receipt for category: ${category}`);
+      } else {
+        throw lastError || new Error('All printer methods failed');
+      }
+
+      // Add a small delay between prints to avoid conflicts
+      if (categories.indexOf(category) < categories.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Failed to auto-print receipt for category ${category}:`, errorMessage);
+      results[category] = false;
+      errors[category] = errorMessage;
+      overallSuccess = false;
+    }
+  }
+
+  return {
+    success: overallSuccess,
+    results,
+    errors
+  };
+};
