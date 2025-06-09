@@ -106,7 +106,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       // Serialize the items array to JSON string for Appwrite storage
       const orderData = {
         items: JSON.stringify(currentOrder), // Convert array to JSON string for storage
-        status: 'Pending' as OrderStatus,
+        status: 'Completed' as OrderStatus, // Set order as completed immediately
         total,
         phoneNumber,
         createdAt: now.toISOString(), // Use ISO string format for Appwrite
@@ -186,7 +186,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
         const tempOrder: Order = {
           id: 'local-' + Date.now(),
           items: currentOrder,
-          status: 'Pending',
+          status: 'Completed', // Set order as completed immediately
           total,
           phoneNumber,
           createdBy: 'current-user-id',

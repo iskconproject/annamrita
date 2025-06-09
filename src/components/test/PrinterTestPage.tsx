@@ -7,8 +7,7 @@ import { Printer, TestTube, CheckCircle, XCircle } from 'lucide-react';
 import {
   printReceiptUSB,
   printReceipt,
-  printReceiptAuto,
-  printReceiptFallback
+  printReceiptAuto
 } from '../../services/printService';
 import { Order } from '../../types/order';
 import { DEFAULT_RECEIPT_CONFIG } from '../../types/receipt';
@@ -70,7 +69,6 @@ export const PrinterTestPage = () => {
   const testUSBPrinting = () => runTest('usb', () => printReceiptUSB(testOrder, DEFAULT_RECEIPT_CONFIG));
   const testSerialPrinting = () => runTest('serial', () => printReceipt(testOrder, DEFAULT_RECEIPT_CONFIG));
   const testAutoPrinting = () => runTest('auto', () => printReceiptAuto(testOrder, DEFAULT_RECEIPT_CONFIG));
-  const testFallbackPrinting = () => runTest('fallback', () => printReceiptFallback(testOrder, DEFAULT_RECEIPT_CONFIG));
 
   const getTestIcon = (testName: string) => {
     const result = testResults[testName];
@@ -199,7 +197,7 @@ export const PrinterTestPage = () => {
                 </div>
               </div>
               <p className="text-sm text-gray-600 mb-3">
-                Automatically detects and uses the best available printer (USB → Serial → Fallback).
+                Automatically detects and uses the best available printer (USB → Serial).
               </p>
               <Button
                 onClick={testAutoPrinting}
@@ -217,34 +215,7 @@ export const PrinterTestPage = () => {
               )}
             </Card>
 
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Printer className="h-5 w-5 text-orange-500" />
-                  <h4 className="font-medium">Browser Print Test</h4>
-                  {getTestIcon('fallback')}
-                  {getTestBadge('fallback')}
-                </div>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Uses browser's built-in print dialog as fallback method.
-              </p>
-              <Button
-                onClick={testFallbackPrinting}
-                disabled={isLoading}
-                className="w-full"
-                variant="outline"
-              >
-                Test Browser Printing
-              </Button>
-              {testResults.fallback && (
-                <Alert className="mt-3">
-                  <AlertDescription className="text-xs">
-                    {testResults.fallback.message}
-                  </AlertDescription>
-                </Alert>
-              )}
-            </Card>
+
           </div>
 
           {/* Instructions */}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
-import { printReceipt, printReceiptFallback, printReceiptAuto, printReceiptsByCategory, printReceiptsByCategoryFallback, printReceiptsByCategoryAuto, groupItemsByCategory } from '../../services/printService.tsx';
+import { printReceipt, printReceiptAuto, printReceiptsByCategory, printReceiptsByCategoryAuto, groupItemsByCategory } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
 import { CheckCircle, AlertCircle } from 'lucide-react';
+import { Order } from '../../types/order';
 
 export const OrderSummary = () => {
   const { currentOrder, removeItemFromOrder, updateItemQuantity, clearCurrentOrder, calculateTotal, createOrder } = useOrderStore();
@@ -29,7 +30,6 @@ export const OrderSummary = () => {
     }
   };
 
-  const [useFallbackPrinting, setUseFallbackPrinting] = useState(false);
   const [useAutoDetection, setUseAutoDetection] = useState(true); // Default to auto-detection
 
   const handleCreateOrder = async () => {
@@ -40,140 +40,131 @@ export const OrderSummary = () => {
 
     try {
       const phone = phoneNumber.trim() ? phoneNumber : undefined;
-      const order = await createOrder(phone);
 
-      if (order) {
-        try {
-          let printResult;
+      // Create a temporary order object for printing (without saving to database yet)
+      const total = calculateTotal();
+      const now = new Date();
 
-          if (useCategoryBasedPrinting) {
-            // Check if order has items from multiple categories
-            const categoryGroups = groupItemsByCategory(order);
-            const categories = Object.keys(categoryGroups);
+      // Generate order number based on date and count
+      const day = now.getDate().toString().padStart(2, '0');
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const year = now.getFullYear().toString();
 
-            if (categories.length > 1) {
-              console.log(`🏷️ Order has items from ${categories.length} categories: ${categories.join(', ')}`);
-              console.log('Using category-based printing...');
+      // For temporary order, use a simple counter (this will be regenerated when actually saving)
+      const tempOrderNumber = `${day}${month}${year}01`; // Temporary number for printing
 
-              if (useFallbackPrinting) {
-                printResult = await printReceiptsByCategoryFallback(order, config);
-              } else if (useAutoDetection) {
-                printResult = await printReceiptsByCategoryAuto(order, config);
-              } else {
-                printResult = await printReceiptsByCategory(order, config, false);
-              }
+      const tempOrder: Order = {
+        id: 'temp-' + Date.now(),
+        items: currentOrder,
+        status: 'Completed',
+        total,
+        phoneNumber: phone,
+        createdBy: 'current-user-id',
+        createdAt: now,
+        orderNumber: tempOrderNumber,
+      };
 
-              // Handle category-based printing results
-              if (printResult.success) {
-                setOrderSuccess(true);
-                setOrderMessage(`Order #${order.orderNumber} was successfully placed and ${categories.length} category-based receipts were printed.`);
-              } else {
-                const failedCategories = Object.entries(printResult.results)
-                  .filter(([, success]) => !success)
-                  .map(([category]) => category);
+      // First, try to print the receipt
+      try {
+        console.log('🖨️ Attempting to print receipt before creating order...');
 
-                if (failedCategories.length === categories.length) {
-                  throw new Error(`Failed to print all category receipts: ${Object.values(printResult.errors).join(', ')}`);
-                } else {
-                  setOrderSuccess(true);
-                  setOrderMessage(`Order #${order.orderNumber} was successfully placed. ${categories.length - failedCategories.length}/${categories.length} category receipts printed successfully. Failed: ${failedCategories.join(', ')}`);
-                }
-              }
-            } else {
-              // Single category, use regular printing
-              console.log(`🏷️ Order has items from single category: ${categories[0]}`);
-              console.log('Using regular printing...');
+        if (useCategoryBasedPrinting) {
+          // Check if order has items from multiple categories
+          const categoryGroups = groupItemsByCategory(tempOrder);
+          const categories = Object.keys(categoryGroups);
 
-              if (useFallbackPrinting) {
-                await printReceiptFallback(order, config);
-              } else if (useAutoDetection) {
-                await printReceiptAuto(order, config);
-              } else {
-                await printReceipt(order, config, false);
-              }
+          if (categories.length > 1) {
+            console.log(`🏷️ Order has items from ${categories.length} categories: ${categories.join(', ')}`);
+            console.log('Using category-based printing...');
 
-              setOrderSuccess(true);
-              setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+            const printResult = useAutoDetection
+              ? await printReceiptsByCategoryAuto(tempOrder, config)
+              : await printReceiptsByCategory(tempOrder, config, false);
+
+            if (!printResult.success) {
+              const failedCategories = Object.keys(printResult.errors);
+              throw new Error(`Failed to print receipts for: ${failedCategories.join(', ')}`);
             }
           } else {
-            // Use regular single receipt printing
-            if (useFallbackPrinting) {
-              await printReceiptFallback(order, config);
-            } else if (useAutoDetection) {
-              await printReceiptAuto(order, config);
-            } else {
-              await printReceipt(order, config, false);
-            }
+            // Single category, use regular printing
+            console.log(`🏷️ Order has items from single category: ${categories[0]}`);
+            console.log('Using regular printing...');
 
-            setOrderSuccess(true);
-            setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+            if (useAutoDetection) {
+              await printReceiptAuto(tempOrder, config);
+            } else {
+              await printReceipt(tempOrder, config, false);
+            }
           }
-
-          // Only clear the current order on successful order creation
-          clearCurrentOrder();
-        } catch (error: unknown) {
-          // Handle specific print errors
-          console.error('Print error:', error);
-
-          // Cast to Error if possible for type safety
-          const printError = error instanceof Error ? error : new Error(String(error));
-
-          // Provide specific error messages based on the error type
-          if (!useFallbackPrinting) {
-            if (printError.name === 'SecurityError' || printError.message?.includes('Access denied')) {
-              setPrintError(
-                'Printer access denied. Please ensure your USB printer is connected and you have granted permission to access it. ' +
-                'Try clicking "Use Browser Printing" below as an alternative.'
-              );
-            } else if (printError.message?.includes('No compatible printer') || printError.message?.includes('No USB thermal printer found')) {
-              setPrintError(
-                'No compatible USB printer found. Please check that your thermal printer is connected via USB and powered on. ' +
-                'You can also try "Use Browser Printing" below.'
-              );
-            } else if (printError.message?.includes('No printer port selected') || printError.message?.includes('No ports available')) {
-              setPrintError(
-                'No printer port available. Please ensure your printer is connected and try again. ' +
-                'You can also use "Use Browser Printing" below.'
-              );
-            } else if (printError.message?.includes('Failed to open connection')) {
-              setPrintError(
-                'Could not connect to printer. The printer may be in use by another application or not powered on. ' +
-                'Try closing other applications and ensure the printer is ready.'
-              );
-            } else {
-              setPrintError(
-                `Printer error: ${printError.message || 'Unknown error occurred'}. ` +
-                'Try using "Use Browser Printing" below as an alternative.'
-              );
-            }
+        } else {
+          // Use regular single receipt printing
+          if (useAutoDetection) {
+            await printReceiptAuto(tempOrder, config);
           } else {
-            setPrintError(printError.message || 'Failed to print receipt using browser print dialog.');
+            await printReceipt(tempOrder, config, false);
           }
-
-          // Show detailed error in console for debugging
-          console.error('Print error details:', {
-            message: printError.message,
-            stack: printError.stack,
-            name: printError.name
-          });
-
-          // Even if printing failed, the order was still placed successfully
-          setOrderSuccess(true);
-          setOrderMessage(`Order #${order.orderNumber} was successfully placed, but there was an issue with printing.`);
-          // Only clear the current order on successful order creation
-          clearCurrentOrder();
         }
-      } else {
-        // Order creation failed
+
+        // Printing was successful, now create the order in the database
+        console.log('✅ Printing successful, creating order in database...');
+        const order = await createOrder(phone);
+
+        if (order) {
+          setOrderSuccess(true);
+          setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+          // Only clear the current order on successful order creation and printing
+          clearCurrentOrder();
+        } else {
+          throw new Error('Failed to save order to database after successful printing.');
+        }
+
+      } catch (printError: unknown) {
+        // Handle specific print errors
+        console.error('Print error:', printError);
+
+        // Cast to Error if possible for type safety
+        const error = printError instanceof Error ? printError : new Error(String(printError));
+
+        // Provide specific error messages based on the error type
+        if (error.name === 'SecurityError' || error.message?.includes('Access denied')) {
+          setPrintError(
+            'Printer access denied. Please ensure your printer is connected and you have granted permission to access it.'
+          );
+        } else if (error.message?.includes('No compatible printer') || error.message?.includes('No USB thermal printer found')) {
+          setPrintError(
+            'No compatible printer found. Please check that your thermal printer is connected and powered on.'
+          );
+        } else if (error.message?.includes('No printer port selected') || error.message?.includes('No ports available')) {
+          setPrintError(
+            'No printer port available. Please ensure your printer is connected and try again.'
+          );
+        } else if (error.message?.includes('Failed to open connection')) {
+          setPrintError(
+            'Could not connect to printer. The printer may be in use by another application or not powered on.'
+          );
+        } else {
+          setPrintError(
+            `Printer error: ${error.message || 'Unknown error occurred'}. Please fix the printer issue and try again.`
+          );
+        }
+
+        // Show detailed error in console for debugging
+        console.error('Print error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+
+        // Do NOT create order or clear current order if printing failed
         setOrderSuccess(false);
-        setOrderMessage('Failed to create order. Please try again.');
-        // Do NOT clear the current order when order creation fails
+        setOrderMessage('Order not placed due to printing failure. Please fix the printer issue and try again.');
       }
+
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error in order process:', error);
 
       // Provide more specific error message if possible
-      let errorMessage = 'Failed to create order. Please try again.';
+      let errorMessage = 'Failed to process order. Please try again.';
       if (error instanceof Error) {
         if (error.message.includes('network') || error.message.includes('connection')) {
           errorMessage = 'Network error: Please check your internet connection and try again.';
@@ -186,7 +177,7 @@ export const OrderSummary = () => {
         }
       }
 
-      setPrintError('Failed to create order.');
+      setPrintError(null);
       setOrderSuccess(false);
       setOrderMessage(errorMessage);
       // Do NOT clear the current order when order creation fails
@@ -194,13 +185,6 @@ export const OrderSummary = () => {
       setIsPrinting(false);
       setPhoneNumber('');
     }
-  };
-
-  const togglePrintingMethod = () => {
-    setUseFallbackPrinting(!useFallbackPrinting);
-    setPrintError(null);
-    setOrderSuccess(null);
-    setOrderMessage(null);
   };
 
   const toggleAutoDetection = () => {
@@ -281,11 +265,7 @@ export const OrderSummary = () => {
                     <span className="text-iskcon-primary font-medium">
                       📄 Will print {categories.length} separate receipts: {categories.join(', ')}
                     </span>
-                  ) : (
-                    <span className="text-gray-500">
-                      📄 Single receipt for {categories[0]}
-                    </span>
-                  );
+                  ) : null;
                 })()}
               </div>
             )}
@@ -355,36 +335,17 @@ export const OrderSummary = () => {
 
             <div className="flex items-center">
               <button
-                onClick={togglePrintingMethod}
+                onClick={toggleAutoDetection}
                 type="button"
                 className="text-xs text-iskcon-primary hover:text-iskcon-dark flex items-center"
               >
-                <span className={`mr-2 ${useFallbackPrinting ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
-                {useFallbackPrinting ? 'Using Browser Printing' : 'Use Browser Printing'}
+                <span className={`mr-2 ${useAutoDetection ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
+                {useAutoDetection ? 'Auto-Detect Printer' : 'Manual Serial Mode'}
               </button>
-
-              {useFallbackPrinting && (
-                <span className="ml-2 text-xs text-gray-500">
-                  (Will open print dialog)
-                </span>
-              )}
+              <span className="ml-2 text-xs text-gray-500">
+                {useAutoDetection ? '(USB/Serial auto-detection)' : '(Web Serial API only)'}
+              </span>
             </div>
-
-            {!useFallbackPrinting && (
-              <div className="flex items-center">
-                <button
-                  onClick={toggleAutoDetection}
-                  type="button"
-                  className="text-xs text-iskcon-primary hover:text-iskcon-dark flex items-center"
-                >
-                  <span className={`mr-2 ${useAutoDetection ? 'bg-iskcon-primary' : 'bg-gray-300'} w-3 h-3 rounded-full`}></span>
-                  {useAutoDetection ? 'Auto-Detect Printer' : 'Manual Serial Mode'}
-                </button>
-                <span className="ml-2 text-xs text-gray-500">
-                  {useAutoDetection ? '(USB/Serial auto-detection)' : '(Web Serial API only)'}
-                </span>
-              </div>
-            )}
           </div>
 
           <div className="flex mt-6 space-x-4">
@@ -400,7 +361,7 @@ export const OrderSummary = () => {
               disabled={currentOrder.length === 0 || isPrinting}
               className="flex-1 px-4 py-3 text-sm font-medium text-white bg-iskcon-primary border border-transparent rounded-md shadow-sm hover:bg-iskcon-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-iskcon-primary disabled:opacity-70"
             >
-              {isPrinting ? 'Processing...' : useFallbackPrinting ? 'Print with Browser & Complete' : 'Print & Complete'}
+              {isPrinting ? 'Processing...' : 'Print & Complete'}
             </button>
           </div>
         </div>

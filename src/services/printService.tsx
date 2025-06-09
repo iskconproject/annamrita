@@ -330,7 +330,8 @@ export const generateReceiptContent = (order: Order, config: ReceiptConfig = DEF
   return receipt;
 };
 
-// Fallback function to print receipt using browser's print dialog
+// Browser printing functionality removed as per requirements
+/*
 export const printReceiptFallback = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
   try {
     const printWidthConfig = PRINT_WIDTH_CONFIGS[config.printWidth || '58mm'];
@@ -341,8 +342,8 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
       throw new Error('Could not open print window. Please check your popup blocker settings.');
     }
 
-    // Generate receipt HTML
-    const receiptHTML = `
+  // Generate receipt HTML
+  const receiptHTML = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -443,11 +444,11 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
       </html>
     `;
 
-    // Set the HTML content of the new window
-    printWindow.document.open();
-    // Using innerHTML to avoid document.write deprecation
-    printWindow.document.documentElement.innerHTML = receiptHTML.replace(/<!DOCTYPE html>|<html>|<\/html>/gi, '');
-    printWindow.document.close();
+  // Set the HTML content of the new window
+  printWindow.document.open();
+  // Using innerHTML to avoid document.write deprecation
+  printWindow.document.documentElement.innerHTML = receiptHTML.replace(/<!DOCTYPE html>|<html>|<\/html>/gi, '');
+  printWindow.document.close();
 
     return true;
   } catch (error) {
@@ -455,6 +456,7 @@ export const printReceiptFallback = async (order: Order, config: ReceiptConfig =
     throw error;
   }
 };
+*/
 
 // Enhanced print function that automatically detects and uses the best available printer
 export const printReceiptAuto = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<boolean> => {
@@ -681,7 +683,8 @@ export const printReceiptsByCategory = async (order: Order, config: ReceiptConfi
   };
 };
 
-// Function to print receipts split by category using browser fallback
+// Browser printing functionality removed as per requirements
+/*
 export const printReceiptsByCategoryFallback = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<{ success: boolean; results: { [category: string]: boolean }; errors: { [category: string]: string } }> => {
   const categoryOrders = groupItemsByCategory(order);
   const categories = Object.keys(categoryOrders);
@@ -856,6 +859,7 @@ export const printReceiptsByCategoryFallback = async (order: Order, config: Rece
     errors
   };
 };
+*/
 
 // Function to print receipts split by category using auto-detection
 export const printReceiptsByCategoryAuto = async (order: Order, config: ReceiptConfig = DEFAULT_RECEIPT_CONFIG): Promise<{ success: boolean; results: { [category: string]: boolean }; errors: { [category: string]: string } }> => {
@@ -874,13 +878,13 @@ export const printReceiptsByCategoryAuto = async (order: Order, config: ReceiptC
     printers = await detectAllPrinters();
     console.log(`🔍 Detected ${printers.length} printer(s) for category printing`);
   } catch (error) {
-    console.warn('Could not detect printers, will try fallback method');
-    return await printReceiptsByCategoryFallback(order, config);
+    console.warn('Could not detect printers');
+    throw new Error('No compatible printers found. Please ensure your thermal printer is connected and powered on.');
   }
 
   if (printers.length === 0) {
-    console.log('❌ No printers detected, using fallback method');
-    return await printReceiptsByCategoryFallback(order, config);
+    console.log('❌ No printers detected');
+    throw new Error('No compatible printers found. Please ensure your thermal printer is connected and powered on.');
   }
 
   // Print each category receipt
