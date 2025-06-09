@@ -23,14 +23,16 @@ const testOrder: Order = {
       name: 'Prasadam Thali',
       shortName: 'Thali',
       price: 150,
-      quantity: 2
+      quantity: 2,
+      category: 'Main Course'
     },
     {
       itemId: '2',
       name: 'Kheer',
       shortName: 'Kheer',
       price: 50,
-      quantity: 1
+      quantity: 1,
+      category: 'Dessert'
     }
   ],
   total: 350,

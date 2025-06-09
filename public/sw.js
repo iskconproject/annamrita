@@ -1,9 +1,7 @@
-const CACHE_NAME = 'annamrita-pos-v2';
+const CACHE_NAME = 'annamrita-pos-v3';
 const urlsToCache = [
   '/',
   '/index.html',
-  '/manifest.json',
-  '/favicon.ico',
 ];
 
 // Install a service worker
@@ -24,6 +22,17 @@ self.addEventListener('install', (event) => {
 
 // Cache and return requests
 self.addEventListener('fetch', (event) => {
+  // Skip service worker for development files
+  if (event.request.url.includes('/@vite/') ||
+    event.request.url.includes('/@react-refresh') ||
+    event.request.url.includes('?t=') ||
+    event.request.url.includes('.tsx') ||
+    event.request.url.includes('.ts') ||
+    event.request.url.includes('.jsx') ||
+    event.request.url.includes('.js') && event.request.url.includes('?')) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -31,20 +40,55 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(event.request);
+
+        // Try to fetch from network
+        return fetch(event.request)
+          .then((networkResponse) => {
+            // Check if we received a valid response
+            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
+              return networkResponse;
+            }
+
+            // Clone the response for caching
+            const responseToCache = networkResponse.clone();
+
+            // Only cache GET requests for specific file types
+            if (event.request.method === 'GET' &&
+              (event.request.url.endsWith('.js') ||
+                event.request.url.endsWith('.css') ||
+                event.request.url.endsWith('.html') ||
+                event.request.url.endsWith('.png') ||
+                event.request.url.endsWith('.jpg') ||
+                event.request.url.endsWith('.svg'))) {
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+            }
+
+            return networkResponse;
+          });
       })
       .catch(() => {
-        // If both cache and network fail, show offline page
+        // If both cache and network fail
         if (event.request.url.indexOf('/api/') !== -1) {
-          // For API requests, we'll handle them differently
-          // Store them in IndexedDB for later sync
+          // For API requests, return offline response
           return new Response(JSON.stringify({
             error: 'You are offline',
             offline: true
           }), {
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            status: 503,
+            statusText: 'Service Unavailable'
           });
         }
+
+        // For other requests, try to return a basic response
+        return new Response('Offline', {
+          status: 503,
+          statusText: 'Service Unavailable',
+          headers: { 'Content-Type': 'text/plain' }
+        });
       })
   );
 });

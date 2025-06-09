@@ -20,6 +20,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
         shortName: 'Veg Pulao',
         quantity: 2,
         price: 120,
+        category: 'Main Course',
       },
       {
         itemId: 'item2',
@@ -27,6 +28,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
         shortName: 'PBM',
         quantity: 1,
         price: 150,
+        category: 'Main Course',
       },
       {
         itemId: 'item3',
@@ -34,6 +36,7 @@ export const ReceiptPreview = ({ config }: ReceiptPreviewProps) => {
         shortName: 'GJ',
         quantity: 3,
         price: 30,
+        category: 'Dessert',
       },
     ],
     status: 'Completed',

@@ -897,52 +897,49 @@ export const printReceiptsByCategoryAuto = async (order: Order, config: ReceiptC
       // Try USB printers first
       const usbPrinters = printers.filter(p => p.type === 'usb');
       if (usbPrinters.length > 0) {
-        for (const printer of usbPrinters) {
-          try {
-            // Generate receipt data using the category-specific JSX
-            const receiptJSX = generateCategoryReceiptJSX(categoryOrder, category, config);
-            const data = await render(receiptJSX);
-
-            // Use USB printing logic (simplified version)
-            if (!navigator.usb) {
-              throw new Error('WebUSB API is not supported');
-            }
-
-            const devices = await navigator.usb.getDevices();
-            const printerDevice = devices.find(device =>
-              THERMAL_PRINTER_VENDORS.some(vendor => vendor.vendorId === device.vendorId)
-            );
-
-            if (!printerDevice) {
-              throw new Error('No USB printer device found');
-            }
-
-            if (!printerDevice.opened) {
-              await printerDevice.open();
-            }
-            if (printerDevice.configuration === null) {
-              await printerDevice.selectConfiguration(1);
-            }
-            await printerDevice.claimInterface(0);
-
-            const config = printerDevice.configuration;
-            const interface_ = config?.interfaces[0];
-            const alternate = interface_?.alternates[0];
-            const endpoint = alternate?.endpoints.find(ep => ep.direction === 'out');
-
-            if (!endpoint) {
-              throw new Error('Could not find output endpoint');
-            }
-
-            await printerDevice.transferOut(endpoint.endpointNumber, data);
-            await printerDevice.close();
-
-            printed = true;
-            break;
-          } catch (usbError) {
-            lastError = usbError instanceof Error ? usbError : new Error(String(usbError));
-            console.warn(`❌ USB printer failed for category ${category}:`, lastError.message);
+        try {
+          // Use USB printing logic (simplified version)
+          if (!navigator.usb) {
+            throw new Error('WebUSB API is not supported');
           }
+
+          const devices = await navigator.usb.getDevices();
+          const printerDevice = devices.find(device =>
+            THERMAL_PRINTER_VENDORS.some(vendor => vendor.vendorId === device.vendorId)
+          );
+
+          if (!printerDevice) {
+            throw new Error('No USB printer device found');
+          }
+
+          if (!printerDevice.opened) {
+            await printerDevice.open();
+          }
+          if (printerDevice.configuration === null) {
+            await printerDevice.selectConfiguration(1);
+          }
+          await printerDevice.claimInterface(0);
+
+          const deviceConfig = printerDevice.configuration;
+          const interface_ = deviceConfig?.interfaces[0];
+          const alternate = interface_?.alternates[0];
+          const endpoint = alternate?.endpoints.find(ep => ep.direction === 'out');
+
+          if (!endpoint) {
+            throw new Error('Could not find output endpoint');
+          }
+
+          // Generate receipt data using the category-specific JSX
+          const receiptJSX = generateCategoryReceiptJSX(categoryOrder, category, config);
+          const data = await render(receiptJSX);
+
+          await printerDevice.transferOut(endpoint.endpointNumber, data);
+          await printerDevice.close();
+
+          printed = true;
+        } catch (usbError) {
+          lastError = usbError instanceof Error ? usbError : new Error(String(usbError));
+          console.warn(`❌ USB printer failed for category ${category}:`, lastError.message);
         }
       }
 

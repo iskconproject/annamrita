@@ -101,7 +101,8 @@ export const PrinterDebugger = () => {
           name: 'Test Item',
           shortName: 'Test',
           price: 10.00,
-          quantity: 1
+          quantity: 1,
+          category: 'Test Category'
         }
       ],
       total: 10.00,
