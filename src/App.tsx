@@ -11,6 +11,7 @@ import { UserManagementPage } from './pages/UserManagementPage';
 import { ReceiptConfigPage } from './pages/ReceiptConfigPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { AdminRoute, VolunteerRoute } from './components/security/ProtectedRoute';
+import { Toaster } from './components/ui/toaster';
 import './App.css';
 
 function App() {
@@ -116,6 +117,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       )}
+      <Toaster />
     </Router>
   );
 }

@@ -2,18 +2,19 @@ import { useState, useEffect } from 'react';
 import { useOrderStore } from '../../store/orderStore';
 import { printReceipt, printReceiptAuto, printReceiptsByCategory, printReceiptsByCategoryAuto, groupItemsByCategory } from '../../services/printService.tsx';
 import { useReceiptConfigStore } from '../../store/receiptConfigStore';
-import { CheckCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { Order } from '../../types/order';
+import { useToast } from '../../hooks/use-toast';
 
 export const OrderSummary = () => {
   const { currentOrder, removeItemFromOrder, updateItemQuantity, clearCurrentOrder, calculateTotal, createOrder } = useOrderStore();
   const { config, fetchConfig } = useReceiptConfigStore();
+  const { toast } = useToast();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isPrinting, setIsPrinting] = useState(false);
   const [printError, setPrintError] = useState<string | null>(null);
-  const [orderSuccess, setOrderSuccess] = useState<boolean | null>(null);
-  const [orderMessage, setOrderMessage] = useState<string | null>(null);
   const [useCategoryBasedPrinting, setUseCategoryBasedPrinting] = useState(true);
+  const [useAutoDetection, setUseAutoDetection] = useState(true); // Default to auto-detection
 
   // Only fetch receipt config if it's not already loaded
   useEffect(() => {
@@ -30,13 +31,9 @@ export const OrderSummary = () => {
     }
   };
 
-  const [useAutoDetection, setUseAutoDetection] = useState(true); // Default to auto-detection
-
   const handleCreateOrder = async () => {
     setIsPrinting(true);
     setPrintError(null);
-    setOrderSuccess(null);
-    setOrderMessage(null);
 
     try {
       const phone = phoneNumber.trim() ? phoneNumber : undefined;
@@ -110,8 +107,13 @@ export const OrderSummary = () => {
         const order = await createOrder(phone);
 
         if (order) {
-          setOrderSuccess(true);
-          setOrderMessage(`Order #${order.orderNumber} was successfully placed and receipt printed.`);
+          // Show success toast notification
+          toast({
+            title: "Order Placed Successfully! 🎉",
+            description: `Order #${order.orderNumber} was successfully placed and receipt printed.`,
+            variant: "default",
+          });
+
           // Only clear the current order on successful order creation and printing
           clearCurrentOrder();
         } else {
@@ -126,27 +128,27 @@ export const OrderSummary = () => {
         const error = printError instanceof Error ? printError : new Error(String(printError));
 
         // Provide specific error messages based on the error type
+        let errorMessage = '';
         if (error.name === 'SecurityError' || error.message?.includes('Access denied')) {
-          setPrintError(
-            'Printer access denied. Please ensure your printer is connected and you have granted permission to access it.'
-          );
+          errorMessage = 'Printer access denied. Please ensure your printer is connected and you have granted permission to access it.';
         } else if (error.message?.includes('No compatible printer') || error.message?.includes('No USB thermal printer found')) {
-          setPrintError(
-            'No compatible printer found. Please check that your thermal printer is connected and powered on.'
-          );
+          errorMessage = 'No compatible printer found. Please check that your thermal printer is connected and powered on.';
         } else if (error.message?.includes('No printer port selected') || error.message?.includes('No ports available')) {
-          setPrintError(
-            'No printer port available. Please ensure your printer is connected and try again.'
-          );
+          errorMessage = 'No printer port available. Please ensure your printer is connected and try again.';
         } else if (error.message?.includes('Failed to open connection')) {
-          setPrintError(
-            'Could not connect to printer. The printer may be in use by another application or not powered on.'
-          );
+          errorMessage = 'Could not connect to printer. The printer may be in use by another application or not powered on.';
         } else {
-          setPrintError(
-            `Printer error: ${error.message || 'Unknown error occurred'}. Please fix the printer issue and try again.`
-          );
+          errorMessage = `Printer error: ${error.message || 'Unknown error occurred'}. Please fix the printer issue and try again.`;
         }
+
+        // Show error toast notification
+        toast({
+          title: "Printing Failed ❌",
+          description: `Order not placed due to printing failure. ${errorMessage}`,
+          variant: "destructive",
+        });
+
+        setPrintError(errorMessage);
 
         // Show detailed error in console for debugging
         console.error('Print error details:', {
@@ -156,8 +158,6 @@ export const OrderSummary = () => {
         });
 
         // Do NOT create order or clear current order if printing failed
-        setOrderSuccess(false);
-        setOrderMessage('Order not placed due to printing failure. Please fix the printer issue and try again.');
       }
 
     } catch (error) {
@@ -177,9 +177,14 @@ export const OrderSummary = () => {
         }
       }
 
+      // Show error toast notification
+      toast({
+        title: "Order Failed ❌",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
       setPrintError(null);
-      setOrderSuccess(false);
-      setOrderMessage(errorMessage);
       // Do NOT clear the current order when order creation fails
     } finally {
       setIsPrinting(false);
@@ -190,15 +195,11 @@ export const OrderSummary = () => {
   const toggleAutoDetection = () => {
     setUseAutoDetection(!useAutoDetection);
     setPrintError(null);
-    setOrderSuccess(null);
-    setOrderMessage(null);
   };
 
   const toggleCategoryBasedPrinting = () => {
     setUseCategoryBasedPrinting(!useCategoryBasedPrinting);
     setPrintError(null);
-    setOrderSuccess(null);
-    setOrderMessage(null);
   };
 
   const total = calculateTotal();
@@ -296,27 +297,7 @@ export const OrderSummary = () => {
             </div>
           )}
 
-          {/* Success Message */}
-          {orderSuccess === true && orderMessage && (
-            <div className="p-4 mt-4 text-sm text-green-700 bg-green-100 rounded-md flex items-start border border-green-300 shadow-sm animate-in fade-in duration-300">
-              <CheckCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold mb-1">Order Successful</h4>
-                <span>{orderMessage}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Error Message */}
-          {orderSuccess === false && orderMessage && (
-            <div className="p-4 mt-4 text-sm text-red-700 bg-red-100 rounded-md flex items-start border border-red-300 shadow-sm animate-in fade-in duration-300">
-              <AlertCircle className="w-5 h-5 mr-2 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold mb-1">Order Failed</h4>
-                <span>{orderMessage}</span>
-              </div>
-            </div>
-          )}
+          {/* Success and error messages are now handled by toast notifications */}
 
           <div className="flex flex-col mt-4 space-y-2">
             <div className="flex items-center">
